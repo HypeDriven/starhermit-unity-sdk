@@ -1,0 +1,9 @@
+{
+  "name": "Starhermit.Editor",
+  "rootNamespace": "Starhermit.Editor",
+  "references": [ "Starhermit", "Starhermit.Publishing" ],
+  "includePlatforms": [ "Editor" ],
+  "excludePlatforms": [],
+  "autoReferenced": true,
+  "noEngineReferences": false
+}

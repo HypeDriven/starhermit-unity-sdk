@@ -1,0 +1,18 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+
+# Unity
+Library/
+Temp/
+Logs/
+UserSettings/
+*.csproj.user
+
+# Tooling
+.venv/
+__pycache__/
+*.pyc
+.env

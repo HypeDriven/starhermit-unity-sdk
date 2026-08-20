@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The package's Tests/Runtime suite. NUnit is the engine Unity Test Framework uses, so the
+       same test files run here under `dotnet test` and inside the editor as EditMode tests. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Starhermit.Tests</AssemblyName>
+    <RootNamespace>Starhermit.Tests</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Packages/com.starhermit.sdk/Tests/Runtime/**/*.cs" />
+    <ProjectReference Include="../sdk/Starhermit.Sdk.csproj" />
+    <ProjectReference Include="../publishing/Starhermit.Publishing.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>

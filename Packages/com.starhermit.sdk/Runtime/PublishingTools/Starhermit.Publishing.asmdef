@@ -1,0 +1,9 @@
+{
+  "name": "Starhermit.Publishing",
+  "rootNamespace": "Starhermit.Publishing",
+  "references": [ "Starhermit" ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": true,
+  "noEngineReferences": false
+}

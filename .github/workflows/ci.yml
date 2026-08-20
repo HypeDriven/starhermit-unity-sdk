@@ -1,0 +1,90 @@
+name: CI
+
+# The whole package is verified without a Unity licence: every Unity-only file is guarded, so the
+# same sources compile as plain .NET and the test suite - NUnit, the engine Unity Test Framework uses -
+# runs under `dotnet test`. The editor jobs below add the platform matrix on top, and only run where
+# the licensed build farm is available.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Build, test and check coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build (warnings are errors, XML docs required)
+        run: dotnet build Starhermit.Sdk.sln --nologo -c Release
+
+      - name: Test
+        run: dotnet test build/tests/Starhermit.Tests.csproj --nologo -c Release --no-build --logger "trx;LogFileName=results.trx"
+
+      - name: Check the generated contracts are current
+        # The backend checkout is not available here, so this asserts the committed manifest matches
+        # the SDK rather than regenerating it from the API. The full check runs in tools/verify.sh
+        # wherever the backend is present.
+        run: |
+          python3 - <<'PY'
+          import json
+          manifest = json.load(open("contracts/coverage-manifest.json"))
+          assert manifest["unmapped"] == [], f"unmapped operations: {manifest['unmapped']}"
+          print(f"{manifest['mappedCount']} mapped, {manifest['classifiedCount']} classified, 0 unmapped")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/results.trx'
+
+  editor:
+    name: Unity ${{ matrix.unity }} EditMode
+    runs-on: ubuntu-latest
+    # Needs the licensed build farm. Without UNITY_LICENSE the job is skipped rather than failing,
+    # so a fork or a contributor PR still gets the full .NET verification above.
+    if: ${{ github.repository_owner != '' && secrets.UNITY_LICENSE != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        unity: ['2021.3.45f1', '2022.3.62f1', '6000.0.32f1']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ matrix.unity }}
+          testMode: EditMode
+          packageMode: true
+          projectPath: .
+
+  players:
+    name: Player build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    needs: editor
+    if: ${{ secrets.UNITY_LICENSE != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [StandaloneLinux64, Android, WebGL]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: ${{ matrix.target }}
+          # IL2CPP with High stripping is the configuration the package's link.xml exists for; a build
+          # that fails here means stripping removed something the wire format needs.
+          buildMethod: Starhermit.Editor.StarhermitCiBuild.BuildStripped

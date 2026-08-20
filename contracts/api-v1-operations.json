@@ -1,0 +1,1189 @@
+{
+  "apiVersion": "v1",
+  "operations": [
+    {
+      "operationId": "Activity.EndLaunch",
+      "method": "POST",
+      "path": "/api/v1/activity/launches/{}/end",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetPlaytime",
+      "method": "GET",
+      "path": "/api/v1/activity/software/{}/playtime",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetFriendsPlaytime",
+      "method": "GET",
+      "path": "/api/v1/activity/software/{}/friends-playtime",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.StartExternalLaunch",
+      "method": "POST",
+      "path": "/api/v1/activity/external-launches",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.EndExternalLaunch",
+      "method": "POST",
+      "path": "/api/v1/activity/external-launches/{}/end",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetExternalPlaytime",
+      "method": "GET",
+      "path": "/api/v1/activity/external/playtime",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetExternalFriendsPlaytime",
+      "method": "GET",
+      "path": "/api/v1/activity/external/friends-playtime",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetGameFeed",
+      "method": "GET",
+      "path": "/api/v1/activity/game-feed",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetFriendActivity",
+      "method": "GET",
+      "path": "/api/v1/activity/friends",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Activity.GetPublicActivity",
+      "method": "GET",
+      "path": "/api/v1/activity/public",
+      "source": "ActivityController.cs"
+    },
+    {
+      "operationId": "Auth.Register",
+      "method": "POST",
+      "path": "/api/v1/auth/public-key/register",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.VerifyRegistration",
+      "method": "GET",
+      "path": "/api/v1/auth/public-key/verify",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.RequestKeyRevocation",
+      "method": "POST",
+      "path": "/api/v1/auth/public-key/revoke-request",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.ConfirmKeyRevocation",
+      "method": "GET",
+      "path": "/api/v1/auth/public-key/revoke/confirm",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.Challenge",
+      "method": "POST",
+      "path": "/api/v1/auth/public-key/challenge",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.Complete",
+      "method": "POST",
+      "path": "/api/v1/auth/public-key/complete",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.Refresh",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.Logout",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.OAuthAuthorize",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/{}/authorize",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.OAuthCallback",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/{}/callback",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.ConfirmIdentityLink",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/link/confirm",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Chat.CreateConversation",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.UpdateConversation",
+      "method": "PATCH",
+      "path": "/api/v1/chat/conversations/{}",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.InviteToConversation",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/invites",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetInvites",
+      "method": "GET",
+      "path": "/api/v1/chat/invites",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.AcceptInvite",
+      "method": "POST",
+      "path": "/api/v1/chat/invites/{}/accept",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.DeclineInvite",
+      "method": "POST",
+      "path": "/api/v1/chat/invites/{}/decline",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetJoinableRooms",
+      "method": "GET",
+      "path": "/api/v1/chat/rooms/joinable",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.JoinRoom",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/join",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.AddParticipants",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/participants",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.RemoveParticipant",
+      "method": "DELETE",
+      "path": "/api/v1/chat/conversations/{}/participants/{}",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.LeaveConversation",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/leave",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetConversations",
+      "method": "GET",
+      "path": "/api/v1/chat/conversations",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetConversation",
+      "method": "GET",
+      "path": "/api/v1/chat/conversations/{}",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetUnread",
+      "method": "GET",
+      "path": "/api/v1/chat/unread",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.MarkConversationRead",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/read",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.GetMessages",
+      "method": "GET",
+      "path": "/api/v1/chat/conversations/{}/messages",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.SendMessage",
+      "method": "POST",
+      "path": "/api/v1/chat/conversations/{}/messages",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.EditMessage",
+      "method": "PUT",
+      "path": "/api/v1/chat/conversations/{}/messages/{}",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "Chat.DeleteMessage",
+      "method": "DELETE",
+      "path": "/api/v1/chat/conversations/{}/messages/{}",
+      "source": "ChatController.cs"
+    },
+    {
+      "operationId": "ChatWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/chat",
+      "source": "ChatWsController.cs"
+    },
+    {
+      "operationId": "CloudSaves.Info",
+      "method": "GET",
+      "path": "/api/v1/me/cloud-saves/{}/info",
+      "source": "CloudSavesController.cs"
+    },
+    {
+      "operationId": "CloudSaves.Download",
+      "method": "GET",
+      "path": "/api/v1/me/cloud-saves/{}",
+      "source": "CloudSavesController.cs"
+    },
+    {
+      "operationId": "CloudSaves.Upload",
+      "method": "PUT",
+      "path": "/api/v1/me/cloud-saves/{}",
+      "source": "CloudSavesController.cs"
+    },
+    {
+      "operationId": "EmailWebhook.Resend",
+      "method": "POST",
+      "path": "/api/v1/webhooks/email/resend",
+      "source": "EmailWebhookController.cs"
+    },
+    {
+      "operationId": "ExternalSoftware.GetLinks",
+      "method": "GET",
+      "path": "/api/v1/me/external-libraries",
+      "source": "ExternalSoftwareController.cs"
+    },
+    {
+      "operationId": "ExternalSoftware.Link",
+      "method": "POST",
+      "path": "/api/v1/me/external-libraries/link",
+      "source": "ExternalSoftwareController.cs"
+    },
+    {
+      "operationId": "ExternalSoftware.Unlink",
+      "method": "DELETE",
+      "path": "/api/v1/me/external-libraries/{}",
+      "source": "ExternalSoftwareController.cs"
+    },
+    {
+      "operationId": "ExternalSoftware.GetOwnedSoftware",
+      "method": "GET",
+      "path": "/api/v1/me/external-software",
+      "source": "ExternalSoftwareController.cs"
+    },
+    {
+      "operationId": "ExternalSoftware.LaunchExternal",
+      "method": "POST",
+      "path": "/api/v1/external-software/{}/launch",
+      "source": "ExternalSoftwareController.cs"
+    },
+    {
+      "operationId": "Friends.SendFriendRequest",
+      "method": "POST",
+      "path": "/api/v1/me/friend-requests",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "Friends.GetFriendRequests",
+      "method": "GET",
+      "path": "/api/v1/me/friend-requests",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "Friends.AcceptFriendRequest",
+      "method": "POST",
+      "path": "/api/v1/me/friend-requests/{}/accept",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "Friends.DeclineFriendRequest",
+      "method": "POST",
+      "path": "/api/v1/me/friend-requests/{}/decline",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "Friends.RemoveFriend",
+      "method": "DELETE",
+      "path": "/api/v1/me/friends/{}",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "Friends.GetFriends",
+      "method": "GET",
+      "path": "/api/v1/me/friends",
+      "source": "FriendsController.cs"
+    },
+    {
+      "operationId": "GameHostAssets.Get",
+      "method": "GET",
+      "path": "/api/v1/game-host/{}/fallback/{}",
+      "source": "GameHostAssetsController.cs"
+    },
+    {
+      "operationId": "GameUploadWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/game-upload",
+      "source": "GameUploadWsController.cs"
+    },
+    {
+      "operationId": "Games.GetGame",
+      "method": "GET",
+      "path": "/api/v1/games/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.LaunchToken",
+      "method": "POST",
+      "path": "/api/v1/games/{}/launch-token",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetServerSession",
+      "method": "GET",
+      "path": "/api/v1/games/{}/server/sessions/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.RefreshServerToken",
+      "method": "POST",
+      "path": "/api/v1/games/{}/server/token",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetAchievements",
+      "method": "GET",
+      "path": "/api/v1/games/{}/achievements",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.MySessions",
+      "method": "GET",
+      "path": "/api/v1/games/{}/sessions/mine",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetSession",
+      "method": "GET",
+      "path": "/api/v1/games/{}/sessions/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.CreateAiSession",
+      "method": "POST",
+      "path": "/api/v1/games/{}/sessions/ai",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.Enqueue",
+      "method": "POST",
+      "path": "/api/v1/games/{}/matchmaking",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.MatchmakingStatus",
+      "method": "GET",
+      "path": "/api/v1/games/{}/matchmaking",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.CancelMatchmaking",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/matchmaking",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.CreateInvite",
+      "method": "POST",
+      "path": "/api/v1/games/{}/invites",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.ListInvites",
+      "method": "GET",
+      "path": "/api/v1/games/{}/invites",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.AcceptInvite",
+      "method": "POST",
+      "path": "/api/v1/games/{}/invites/{}/accept",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.MyGameInvites",
+      "method": "GET",
+      "path": "/api/v1/me/game-invites",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.DeclineInvite",
+      "method": "POST",
+      "path": "/api/v1/games/{}/invites/{}/decline",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.MyReplays",
+      "method": "GET",
+      "path": "/api/v1/games/{}/replays/mine",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetReplay",
+      "method": "GET",
+      "path": "/api/v1/games/{}/replays/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetControls",
+      "method": "GET",
+      "path": "/api/v1/games/{}/controls",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.PutControls",
+      "method": "PUT",
+      "path": "/api/v1/games/{}/controls",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.DeleteControls",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/controls",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetSettings",
+      "method": "GET",
+      "path": "/api/v1/games/{}/settings",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.PutSettings",
+      "method": "PUT",
+      "path": "/api/v1/games/{}/settings",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.PatchSettings",
+      "method": "PATCH",
+      "path": "/api/v1/games/{}/settings",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.DeleteSettings",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/settings",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetSetting",
+      "method": "GET",
+      "path": "/api/v1/games/{}/settings/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.PutSetting",
+      "method": "PUT",
+      "path": "/api/v1/games/{}/settings/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.DeleteSetting",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/settings/{}",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "GamesWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/games",
+      "source": "GamesWsController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetIcon",
+      "method": "GET",
+      "path": "/api/v1/github-games/{}/icon",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetCoverArt",
+      "method": "GET",
+      "path": "/api/v1/github-games/{}/cover",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.SetCoverArt",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/cover",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ClearCoverArt",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/cover",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.Submit",
+      "method": "POST",
+      "path": "/api/v1/me/github-games",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.Claim",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/claim",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ListMine",
+      "method": "GET",
+      "path": "/api/v1/me/github-games",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.Transfer",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/transfer",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.Delete",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.UploadBundle",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/bundle",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.CreateFromFolder",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/upload",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetStats",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/stats",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.SetHosting",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/hosting",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetDeployment",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/deployment",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.SetDeployment",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/deployment",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ListAll",
+      "method": "GET",
+      "path": "/api/v1/github-games",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetGitHubLink",
+      "method": "GET",
+      "path": "/api/v1/me/github",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "Leaderboards.GetLeaderboards",
+      "method": "GET",
+      "path": "/api/v1/leaderboards",
+      "source": "LeaderboardsController.cs"
+    },
+    {
+      "operationId": "Leaderboards.GetLeaderboard",
+      "method": "GET",
+      "path": "/api/v1/leaderboards/{}",
+      "source": "LeaderboardsController.cs"
+    },
+    {
+      "operationId": "Leaderboards.GetEntries",
+      "method": "GET",
+      "path": "/api/v1/leaderboards/{}/entries",
+      "source": "LeaderboardsController.cs"
+    },
+    {
+      "operationId": "Leaderboards.SubmitScore",
+      "method": "POST",
+      "path": "/api/v1/leaderboards/{}/submit",
+      "source": "LeaderboardsController.cs"
+    },
+    {
+      "operationId": "MeAchievements.GetMyAchievements",
+      "method": "GET",
+      "path": "/api/v1/me/achievements",
+      "source": "MeAchievementsController.cs"
+    },
+    {
+      "operationId": "MeAchievements.Unlock",
+      "method": "POST",
+      "path": "/api/v1/me/achievements/unlock",
+      "source": "MeAchievementsController.cs"
+    },
+    {
+      "operationId": "MeActivity.GetMyActivity",
+      "method": "GET",
+      "path": "/api/v1/me/activity",
+      "source": "MeActivityController.cs"
+    },
+    {
+      "operationId": "Me.GetProfile",
+      "method": "GET",
+      "path": "/api/v1/me",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.UpdateProfile",
+      "method": "PATCH",
+      "path": "/api/v1/me",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.AcceptTerms",
+      "method": "POST",
+      "path": "/api/v1/me/terms/accept",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.UpdateAvatar",
+      "method": "PUT",
+      "path": "/api/v1/me/avatar",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.GetAvatar",
+      "method": "GET",
+      "path": "/api/v1/me/avatar",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.GetUserAvatar",
+      "method": "GET",
+      "path": "/api/v1/users/{}/avatar",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.GetUserProfile",
+      "method": "GET",
+      "path": "/api/v1/users/{}/profile",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.GetIdentities",
+      "method": "GET",
+      "path": "/api/v1/me/identities",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.AddIdentity",
+      "method": "POST",
+      "path": "/api/v1/me/identities",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.RemoveIdentity",
+      "method": "DELETE",
+      "path": "/api/v1/me/identities/{}",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.GetPrivacy",
+      "method": "GET",
+      "path": "/api/v1/me/privacy",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "Me.UpdatePrivacy",
+      "method": "PUT",
+      "path": "/api/v1/me/privacy",
+      "source": "MeController.cs"
+    },
+    {
+      "operationId": "MeEntitlements.GetEntitlements",
+      "method": "GET",
+      "path": "/api/v1/me/entitlements",
+      "source": "MeEntitlementsController.cs"
+    },
+    {
+      "operationId": "MePublicKeys.GetPublicKeys",
+      "method": "GET",
+      "path": "/api/v1/me/public-keys",
+      "source": "MePublicKeysController.cs"
+    },
+    {
+      "operationId": "MePublicKeys.AddPublicKey",
+      "method": "POST",
+      "path": "/api/v1/me/public-keys",
+      "source": "MePublicKeysController.cs"
+    },
+    {
+      "operationId": "MePublicKeys.RevokePublicKey",
+      "method": "DELETE",
+      "path": "/api/v1/me/public-keys/{}",
+      "source": "MePublicKeysController.cs"
+    },
+    {
+      "operationId": "MePublicKeys.RevokeAllPublicKeys",
+      "method": "DELETE",
+      "path": "/api/v1/me/public-keys/all",
+      "source": "MePublicKeysController.cs"
+    },
+    {
+      "operationId": "Presence.Heartbeat",
+      "method": "POST",
+      "path": "/api/v1/me/heartbeat",
+      "source": "PresenceController.cs"
+    },
+    {
+      "operationId": "PublisherAchievements.Create",
+      "method": "POST",
+      "path": "/api/v1/publisher/titles/{}/achievements",
+      "source": "PublisherAchievementsController.cs"
+    },
+    {
+      "operationId": "PublisherAchievements.List",
+      "method": "GET",
+      "path": "/api/v1/publisher/titles/{}/achievements",
+      "source": "PublisherAchievementsController.cs"
+    },
+    {
+      "operationId": "PublisherAchievements.GetById",
+      "method": "GET",
+      "path": "/api/v1/publisher/achievements/{}",
+      "source": "PublisherAchievementsController.cs"
+    },
+    {
+      "operationId": "PublisherAchievements.Update",
+      "method": "PUT",
+      "path": "/api/v1/publisher/achievements/{}",
+      "source": "PublisherAchievementsController.cs"
+    },
+    {
+      "operationId": "PublisherAchievements.Delete",
+      "method": "DELETE",
+      "path": "/api/v1/publisher/achievements/{}",
+      "source": "PublisherAchievementsController.cs"
+    },
+    {
+      "operationId": "Publisher.CreatePublisher",
+      "method": "POST",
+      "path": "/api/v1/publisher",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.GetMyPublishers",
+      "method": "GET",
+      "path": "/api/v1/publisher",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.AddMember",
+      "method": "POST",
+      "path": "/api/v1/publisher/{}/members",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.RemoveMember",
+      "method": "DELETE",
+      "path": "/api/v1/publisher/{}/members/{}",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.GetMember",
+      "method": "GET",
+      "path": "/api/v1/publisher/{}/members/{}",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.CreateOrUpdateTitle",
+      "method": "POST",
+      "path": "/api/v1/publisher/software",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.GenerateUploadUrl",
+      "method": "POST",
+      "path": "/api/v1/publisher/software/upload",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.FinalizeBuild",
+      "method": "POST",
+      "path": "/api/v1/publisher/software/build/finalize",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.GetDownloadAnalytics",
+      "method": "GET",
+      "path": "/api/v1/publisher/analytics/downloads",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "Publisher.GetLaunchAnalytics",
+      "method": "GET",
+      "path": "/api/v1/publisher/analytics/launches",
+      "source": "PublisherController.cs"
+    },
+    {
+      "operationId": "PublisherEntitlements.Grant",
+      "method": "POST",
+      "path": "/api/v1/publisher/entitlements/grant",
+      "source": "PublisherEntitlementsController.cs"
+    },
+    {
+      "operationId": "PublisherEntitlements.Revoke",
+      "method": "POST",
+      "path": "/api/v1/publisher/entitlements/revoke",
+      "source": "PublisherEntitlementsController.cs"
+    },
+    {
+      "operationId": "PublisherLeaderboards.Create",
+      "method": "POST",
+      "path": "/api/v1/publisher/leaderboards",
+      "source": "PublisherLeaderboardsController.cs"
+    },
+    {
+      "operationId": "PublisherLeaderboards.GetById",
+      "method": "GET",
+      "path": "/api/v1/publisher/leaderboards/{}",
+      "source": "PublisherLeaderboardsController.cs"
+    },
+    {
+      "operationId": "PublisherLeaderboards.Update",
+      "method": "PUT",
+      "path": "/api/v1/publisher/leaderboards/{}",
+      "source": "PublisherLeaderboardsController.cs"
+    },
+    {
+      "operationId": "PublisherLeaderboards.Delete",
+      "method": "DELETE",
+      "path": "/api/v1/publisher/leaderboards/{}",
+      "source": "PublisherLeaderboardsController.cs"
+    },
+    {
+      "operationId": "Ratings.Rate",
+      "method": "PUT",
+      "path": "/api/v1/me/ratings",
+      "source": "RatingsController.cs"
+    },
+    {
+      "operationId": "Ratings.Query",
+      "method": "POST",
+      "path": "/api/v1/ratings/query",
+      "source": "RatingsController.cs"
+    },
+    {
+      "operationId": "Ratings.Reviews",
+      "method": "GET",
+      "path": "/api/v1/ratings/reviews",
+      "source": "RatingsController.cs"
+    },
+    {
+      "operationId": "Realtime.CreateRoom",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.MyActiveRoom",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms/mine",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.ListInvites",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms/invites",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.AcceptInvite",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/invites/{}/accept",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.DeclineInvite",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/invites/{}/decline",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.QuickJoin",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/quick-join",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.GetRoom",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms/{}",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.CreateInvite",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/invites",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.OpenRoom",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/open",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.StartRoom",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/start",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.LeaveRoom",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/leave",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.SetSeats",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/seats",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.SubmitResult",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/result",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "RealtimeWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/realtime",
+      "source": "RealtimeWsController.cs"
+    },
+    {
+      "operationId": "Relay.ListSessions",
+      "method": "GET",
+      "path": "/api/v1/relay",
+      "source": "RelayController.cs"
+    },
+    {
+      "operationId": "Relay.CreateSession",
+      "method": "POST",
+      "path": "/api/v1/relay",
+      "source": "RelayController.cs"
+    },
+    {
+      "operationId": "Relay.GetSession",
+      "method": "GET",
+      "path": "/api/v1/relay/{}",
+      "source": "RelayController.cs"
+    },
+    {
+      "operationId": "Relay.JoinSession",
+      "method": "POST",
+      "path": "/api/v1/relay/{}/join",
+      "source": "RelayController.cs"
+    },
+    {
+      "operationId": "Relay.CloseSession",
+      "method": "POST",
+      "path": "/api/v1/relay/{}/close",
+      "source": "RelayController.cs"
+    },
+    {
+      "operationId": "RelayWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/relay",
+      "source": "RelayWsController.cs"
+    },
+    {
+      "operationId": "SoftwareAchievements.GetAchievements",
+      "method": "GET",
+      "path": "/api/v1/software/{}/achievements",
+      "source": "SoftwareAchievementsController.cs"
+    },
+    {
+      "operationId": "Software.GetTitles",
+      "method": "GET",
+      "path": "/api/v1/software",
+      "source": "SoftwareController.cs"
+    },
+    {
+      "operationId": "Software.ClaimFree",
+      "method": "POST",
+      "path": "/api/v1/software/{}/claim",
+      "source": "SoftwareController.cs"
+    },
+    {
+      "operationId": "Software.GetTitle",
+      "method": "GET",
+      "path": "/api/v1/software/{}",
+      "source": "SoftwareController.cs"
+    },
+    {
+      "operationId": "Software.GetBuilds",
+      "method": "GET",
+      "path": "/api/v1/software/{}/builds",
+      "source": "SoftwareController.cs"
+    },
+    {
+      "operationId": "Software.Launch",
+      "method": "POST",
+      "path": "/api/v1/software/{}/launch",
+      "source": "SoftwareController.cs"
+    },
+    {
+      "operationId": "SoftwareDownload.DownloadSoftware",
+      "method": "POST",
+      "path": "/api/v1/software/{}/download",
+      "source": "SoftwareDownloadController.cs"
+    },
+    {
+      "operationId": "Time.GetLocalServerTime",
+      "method": "GET",
+      "path": "/api/v1/time",
+      "source": "TimeController.cs"
+    },
+    {
+      "operationId": "Voice.CreateRoom",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.ListRooms",
+      "method": "GET",
+      "path": "/api/v1/voice/rooms",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.GetRoom",
+      "method": "GET",
+      "path": "/api/v1/voice/rooms/{}",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.JoinRoom",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/join",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.LeaveRoom",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/leave",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.SetMute",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/mute",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.CloseRoom",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/close",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "VoiceWs.Get",
+      "method": "GET",
+      "path": "/ws/v1/voice",
+      "source": "VoiceWsController.cs"
+    },
+    {
+      "operationId": "Wishlist.List",
+      "method": "GET",
+      "path": "/api/v1/me/wishlist",
+      "source": "WishlistController.cs"
+    },
+    {
+      "operationId": "Wishlist.Add",
+      "method": "PUT",
+      "path": "/api/v1/me/wishlist/{}",
+      "source": "WishlistController.cs"
+    },
+    {
+      "operationId": "Wishlist.Remove",
+      "method": "DELETE",
+      "path": "/api/v1/me/wishlist/{}",
+      "source": "WishlistController.cs"
+    }
+  ],
+  "sockets": [
+    {
+      "protocol": "chat",
+      "path": "/ws/v1/chat",
+      "sdk": "StarhermitChatConnection"
+    },
+    {
+      "protocol": "voice",
+      "path": "/ws/v1/voice",
+      "sdk": "StarhermitVoiceConnection"
+    },
+    {
+      "protocol": "games",
+      "path": "/ws/v1/games",
+      "sdk": "StarhermitGameConnection"
+    },
+    {
+      "protocol": "realtime",
+      "path": "/ws/v1/realtime",
+      "sdk": "StarhermitRealtimeConnection"
+    },
+    {
+      "protocol": "relay",
+      "path": "/ws/v1/relay",
+      "sdk": "StarhermitRelayConnection"
+    },
+    {
+      "protocol": "game-upload",
+      "path": "/ws/v1/game-upload",
+      "sdk": "StarhermitGameUploadConnection"
+    }
+  ]
+}

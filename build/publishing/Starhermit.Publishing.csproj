@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Mirrors the Starhermit.Publishing assembly definition: the optional publishing *workflow*
+       helpers. The typed publisher REST clients stay in the core assembly, so a project that
+       excludes this one keeps every API operation and loses only the multi-step helpers. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Starhermit.Publishing</AssemblyName>
+    <RootNamespace>Starhermit.Publishing</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Packages/com.starhermit.sdk/Runtime/PublishingTools/**/*.cs" />
+    <ProjectReference Include="../sdk/Starhermit.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

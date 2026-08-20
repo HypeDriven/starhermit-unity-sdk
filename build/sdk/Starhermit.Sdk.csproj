@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Editor-independent compile of the UPM package's Runtime sources.
+
+    Unity is the shipping compiler, but a Unity licence is not available on every machine that
+    has to verify this package (CI containers, agent workstations, contributors without a seat).
+    Every Unity-specific file in Runtime/ is wrapped in `#if UNITY_2021_3_OR_NEWER`, so the same
+    sources compile here to a plain .NET Standard 2.1 assembly and the whole platform-neutral SDK
+    - transport pipeline, JSON, sessions, sockets, every service client - is buildable and
+    testable without an editor. Unity compiles these files again through Starhermit.asmdef.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Starhermit</AssemblyName>
+    <RootNamespace>Starhermit</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Packages/com.starhermit.sdk/Runtime/**/*.cs"
+             Exclude="../../Packages/com.starhermit.sdk/Runtime/PublishingTools/**/*.cs" />
+  </ItemGroup>
+
+</Project>

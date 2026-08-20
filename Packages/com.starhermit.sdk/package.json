@@ -1,0 +1,20 @@
+{
+  "name": "com.starhermit.sdk",
+  "version": "0.1.0",
+  "displayName": "Starhermit SDK",
+  "description": "Typed, asynchronous Unity client for the Starhermit REST v1 and WebSocket v1 APIs: authentication, profile, friends, chat, voice, catalog, entitlements, cloud saves, achievements, leaderboards, authoritative games, realtime rooms, peer relay and publishing.",
+  "unity": "2021.3",
+  "license": "MIT",
+  "keywords": [ "starhermit", "sdk", "networking", "multiplayer", "backend" ],
+  "author": { "name": "Starhermit" },
+  "samples": [
+    { "displayName": "Authentication and Profile", "description": "OAuth and public-key adapters, session UI, terms, avatar and presence heartbeat.", "path": "Samples~/AuthenticationAndProfile" },
+    { "displayName": "Friends and Chat", "description": "Friend requests, conversations, unread state, live chat and reconnect.", "path": "Samples~/FriendsAndChat" },
+    { "displayName": "Matchmaking Game", "description": "Launch token, matchmaking ticket, session, game socket, settings, controls and replay.", "path": "Samples~/MatchmakingGame" },
+    { "displayName": "Realtime and Relay", "description": "Lobby seats and teams, quick join, binary peer traffic and host loss.", "path": "Samples~/RealtimeAndRelay" },
+    { "displayName": "Voice", "description": "Permissions, room lifecycle, PCM fallback, mute and speaking state.", "path": "Samples~/Voice" },
+    { "displayName": "Catalog Services", "description": "Search, entitlement, download, activity, rating, wishlist and cloud-save conflict.", "path": "Samples~/CatalogServices" },
+    { "displayName": "Publisher Tool", "description": "Typed publisher operations and streaming WebSocket bundle upload.", "path": "Samples~/PublisherTool" },
+    { "displayName": "Dedicated Server", "description": "Invoke-key exchange, server-token isolation, session lookup and clean shutdown.", "path": "Samples~/DedicatedServer" }
+  ]
+}

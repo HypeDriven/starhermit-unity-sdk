@@ -1,0 +1,17 @@
+<!--
+  Managed stripping removes what it cannot see being used. The SDK reads no types by reflection, so
+  very little needs preserving - but the platform adapters are selected at runtime by the client, and
+  a high stripping level can decide their constructors are unreachable.
+
+  Preserving this assembly's public surface costs a few kilobytes and removes a whole class of
+  "works in the editor, throws in the IL2CPP build" report.
+-->
+<linker>
+  <assembly fullname="Starhermit" preserve="all" />
+  <assembly fullname="Starhermit.Publishing" preserve="all" />
+  <assembly fullname="System.Security.Cryptography.Algorithms">
+    <type fullname="System.Security.Cryptography.Aes" preserve="all" />
+    <type fullname="System.Security.Cryptography.HMACSHA256" preserve="all" />
+    <type fullname="System.Security.Cryptography.SHA256" preserve="all" />
+  </assembly>
+</linker>

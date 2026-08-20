@@ -1,0 +1,10 @@
+{
+  "name": "Starhermit.EditorTests",
+  "rootNamespace": "Starhermit.Tests.Editor",
+  "references": [ "Starhermit", "Starhermit.Publishing", "Starhermit.Editor", "UnityEngine.TestRunner", "UnityEditor.TestRunner" ],
+  "includePlatforms": [ "Editor" ],
+  "precompiledReferences": [ "nunit.framework.dll" ],
+  "autoReferenced": false,
+  "defineConstraints": [ "UNITY_INCLUDE_TESTS" ],
+  "optionalUnityReferences": [ "TestAssemblies" ]
+}
