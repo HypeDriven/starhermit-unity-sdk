@@ -4,6 +4,16 @@ All notable changes to this package are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the package uses semantic versioning:
 additive API and endpoint coverage is a minor release, a source-breaking change is a major one.
 
+## [Unreleased]
+
+### Fixed
+
+- **Emailed links are redeemed with POST.** `Auth.VerifyPublicKeyRegistrationAsync`,
+  `Auth.ConfirmKeyRevocationAsync` and `Auth.ConfirmIdentityLinkAsync` now `POST` the link's URL. The
+  backend answers `GET` on those links with a confirm page that changes nothing — so a mail scanner
+  opening the link cannot redeem it — and these calls got that page instead of JSON. The three `GET`
+  pages are classified in the coverage manifest as browser-only.
+
 ## [0.1.0] - 2026-08-20
 
 First implementation. Covers the whole deployed REST API v1 and all six WebSocket protocols.

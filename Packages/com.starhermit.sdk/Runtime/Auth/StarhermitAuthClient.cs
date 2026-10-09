@@ -172,7 +172,9 @@ namespace Starhermit
             string verificationToken,
             CancellationToken cancellationToken = default)
         {
-            var request = Get("auth/public-key/verify")
+            // POST: GET on an emailed link only renders a confirm page, so a mail scanner fetching
+            // it cannot redeem it. Redemption is always an explicit POST to the same URL.
+            var request = Post("auth/public-key/verify")
                 .WithQuery("token", verificationToken)
                 .WithCredential(StarhermitCredential.None);
 
@@ -205,7 +207,7 @@ namespace Starhermit
             string confirmationToken,
             CancellationToken cancellationToken = default)
         {
-            var request = Get("auth/public-key/revoke/confirm")
+            var request = Post("auth/public-key/revoke/confirm")
                 .WithQuery("token", confirmationToken)
                 .WithCredential(StarhermitCredential.None);
             return SendAsync(request, "auth.confirmKeyRevocation", StarhermitRevocationResult.Read, cancellationToken);
@@ -348,7 +350,7 @@ namespace Starhermit
             string confirmationToken,
             CancellationToken cancellationToken = default)
         {
-            var request = Get("auth/oauth/link/confirm")
+            var request = Post("auth/oauth/link/confirm")
                 .WithQuery("token", confirmationToken)
                 .WithCredential(StarhermitCredential.None);
             var json = await SendJsonAsync(request, "auth.confirmIdentityLink", cancellationToken).ConfigureAwait(false);

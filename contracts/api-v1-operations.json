@@ -68,8 +68,14 @@
       "source": "AuthController.cs"
     },
     {
-      "operationId": "Auth.VerifyRegistration",
+      "operationId": "Auth.VerifyRegistrationPage",
       "method": "GET",
+      "path": "/api/v1/auth/public-key/verify",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.VerifyRegistration",
+      "method": "POST",
       "path": "/api/v1/auth/public-key/verify",
       "source": "AuthController.cs"
     },
@@ -81,6 +87,12 @@
     },
     {
       "operationId": "Auth.ConfirmKeyRevocation",
+      "method": "POST",
+      "path": "/api/v1/auth/public-key/revoke/confirm",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.ConfirmKeyRevocationPage",
       "method": "GET",
       "path": "/api/v1/auth/public-key/revoke/confirm",
       "source": "AuthController.cs"
@@ -123,6 +135,12 @@
     },
     {
       "operationId": "Auth.ConfirmIdentityLink",
+      "method": "POST",
+      "path": "/api/v1/auth/oauth/link/confirm",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.ConfirmIdentityLinkPage",
       "method": "GET",
       "path": "/api/v1/auth/oauth/link/confirm",
       "source": "AuthController.cs"

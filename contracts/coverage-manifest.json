@@ -1,9 +1,9 @@
 {
   "apiVersion": "v1",
   "generatedFrom": "Platform.Api controllers",
-  "operationCount": 192,
+  "operationCount": 195,
   "mappedCount": 182,
-  "classifiedCount": 4,
+  "classifiedCount": 7,
   "operations": [
     {
       "operationId": "Activity.StartExternalLaunch",
@@ -84,7 +84,7 @@
     },
     {
       "operationId": "Auth.ConfirmIdentityLink",
-      "method": "GET",
+      "method": "POST",
       "path": "/api/v1/auth/oauth/link/confirm",
       "source": "AuthController.cs",
       "sdkOperation": "auth.confirmIdentityLink"
@@ -119,14 +119,14 @@
     },
     {
       "operationId": "Auth.ConfirmKeyRevocation",
-      "method": "GET",
+      "method": "POST",
       "path": "/api/v1/auth/public-key/revoke/confirm",
       "source": "AuthController.cs",
       "sdkOperation": "auth.confirmKeyRevocation"
     },
     {
       "operationId": "Auth.VerifyRegistration",
-      "method": "GET",
+      "method": "POST",
       "path": "/api/v1/auth/public-key/verify",
       "source": "AuthController.cs",
       "sdkOperation": "auth.verifyPublicKeyRegistration"
@@ -1282,6 +1282,13 @@
   ],
   "classified": [
     {
+      "operationId": "Auth.ConfirmIdentityLinkPage",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/link/confirm",
+      "source": "AuthController.cs",
+      "classification": "Opened from the identity-link email: a confirm page that changes nothing. Redeemed by Auth.ConfirmIdentityLinkAsync (POST)."
+    },
+    {
       "operationId": "Auth.OAuthAuthorize",
       "method": "GET",
       "path": "/api/v1/auth/oauth/{}/authorize",
@@ -1294,6 +1301,20 @@
       "path": "/api/v1/auth/oauth/{}/callback",
       "source": "AuthController.cs",
       "classification": "Followed by the browser during OAuth, never called by the SDK; its result arrives through IStarhermitOAuthBrowser."
+    },
+    {
+      "operationId": "Auth.ConfirmKeyRevocationPage",
+      "method": "GET",
+      "path": "/api/v1/auth/public-key/revoke/confirm",
+      "source": "AuthController.cs",
+      "classification": "Opened from the revocation email: a confirm page that changes nothing. Redeemed by Auth.ConfirmKeyRevocationAsync (POST)."
+    },
+    {
+      "operationId": "Auth.VerifyRegistrationPage",
+      "method": "GET",
+      "path": "/api/v1/auth/public-key/verify",
+      "source": "AuthController.cs",
+      "classification": "Opened from the verification email: a confirm page that changes nothing. Redeemed by Auth.VerifyPublicKeyRegistrationAsync (POST)."
     },
     {
       "operationId": "GameHostAssets.Get",

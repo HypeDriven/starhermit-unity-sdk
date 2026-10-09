@@ -167,6 +167,14 @@ CLASSIFIED = {
         "Opened in a browser rather than called: the SDK builds this URL with Auth.BuildAuthorizeUri.",
     ("GET", "/api/v1/github-games/{}/icon"):
         "Mapped as BrowserGames.GetIconAsync; also served directly to browsers.",
+    # The emailed one-time links: GET renders a confirm page and changes nothing, so a mail scanner
+    # fetching the link cannot redeem it. The SDK redeems with the POST on the same path.
+    ("GET", "/api/v1/auth/public-key/verify"):
+        "Opened from the verification email: a confirm page that changes nothing. Redeemed by Auth.VerifyPublicKeyRegistrationAsync (POST).",
+    ("GET", "/api/v1/auth/public-key/revoke/confirm"):
+        "Opened from the revocation email: a confirm page that changes nothing. Redeemed by Auth.ConfirmKeyRevocationAsync (POST).",
+    ("GET", "/api/v1/auth/oauth/link/confirm"):
+        "Opened from the identity-link email: a confirm page that changes nothing. Redeemed by Auth.ConfirmIdentityLinkAsync (POST).",
 }
 
 

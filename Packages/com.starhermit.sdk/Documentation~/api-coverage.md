@@ -6,7 +6,7 @@ classified with a reason; a release cannot ship with an unmapped one.
 
 - Operations: **192**
 - Mapped to a typed method: **182**
-- Classified as not-for-clients: **4**
+- Classified as not-for-clients: **7**
 - Unmapped: **0**
 
 ## WebSocket protocols
@@ -35,13 +35,13 @@ classified with a reason; a release cannot ship with an unmapped one.
 | GET | `/api/v1/activity/software/{}/friends-playtime` | `activity.getFriendsPlaytime` |
 | GET | `/api/v1/activity/software/{}/playtime` | `activity.getPlaytime` |
 | POST | `/api/v1/auth/logout` | `auth.logout` |
-| GET | `/api/v1/auth/oauth/link/confirm` | `auth.confirmIdentityLink` |
+| POST | `/api/v1/auth/oauth/link/confirm` | `auth.confirmIdentityLink` |
 | POST | `/api/v1/auth/public-key/challenge` | `auth.requestChallenge` |
 | POST | `/api/v1/auth/public-key/complete` | `auth.completePublicKeyAuthentication` |
 | POST | `/api/v1/auth/public-key/register` | `auth.beginPublicKeyRegistration` |
 | POST | `/api/v1/auth/public-key/revoke-request` | `auth.requestKeyRevocation` |
-| GET | `/api/v1/auth/public-key/revoke/confirm` | `auth.confirmKeyRevocation` |
-| GET | `/api/v1/auth/public-key/verify` | `auth.verifyPublicKeyRegistration` |
+| POST | `/api/v1/auth/public-key/revoke/confirm` | `auth.confirmKeyRevocation` |
+| POST | `/api/v1/auth/public-key/verify` | `auth.verifyPublicKeyRegistration` |
 | POST | `/api/v1/auth/refresh` | `auth.refresh` |
 | GET | `/api/v1/chat/conversations` | `chat.getConversations` |
 | POST | `/api/v1/chat/conversations` | `chat.createDirectConversation` |
@@ -211,7 +211,10 @@ classified with a reason; a release cannot ship with an unmapped one.
 
 | Method | Route | Why |
 | --- | --- | --- |
+| GET | `/api/v1/auth/oauth/link/confirm` | Opened from the identity-link email: a confirm page that changes nothing. Redeemed by Auth.ConfirmIdentityLinkAsync (POST). |
 | GET | `/api/v1/auth/oauth/{}/authorize` | Opened in a browser rather than called: the SDK builds this URL with Auth.BuildAuthorizeUri. |
 | GET | `/api/v1/auth/oauth/{}/callback` | Followed by the browser during OAuth, never called by the SDK; its result arrives through IStarhermitOAuthBrowser. |
+| GET | `/api/v1/auth/public-key/revoke/confirm` | Opened from the revocation email: a confirm page that changes nothing. Redeemed by Auth.ConfirmKeyRevocationAsync (POST). |
+| GET | `/api/v1/auth/public-key/verify` | Opened from the verification email: a confirm page that changes nothing. Redeemed by Auth.VerifyPublicKeyRegistrationAsync (POST). |
 | GET | `/api/v1/game-host/{}/fallback/{}` | Served to the browser that hosts a platform-hosted game, not called by a game client. |
 | POST | `/api/v1/webhooks/email/resend` | Server-to-server: the deployment's email provider posts delivery events here. A game client has no part in it. |

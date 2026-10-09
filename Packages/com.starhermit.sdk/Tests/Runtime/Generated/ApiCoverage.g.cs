@@ -58,13 +58,13 @@ namespace Starhermit.Tests
             new StarhermitOperationCoverage("GET", "/api/v1/activity/software/{}/friends-playtime", "Activity.GetFriendsPlaytime", "activity.getFriendsPlaytime"),
             new StarhermitOperationCoverage("GET", "/api/v1/activity/software/{}/playtime", "Activity.GetPlaytime", "activity.getPlaytime"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/logout", "Auth.Logout", "auth.logout"),
-            new StarhermitOperationCoverage("GET", "/api/v1/auth/oauth/link/confirm", "Auth.ConfirmIdentityLink", "auth.confirmIdentityLink"),
+            new StarhermitOperationCoverage("POST", "/api/v1/auth/oauth/link/confirm", "Auth.ConfirmIdentityLink", "auth.confirmIdentityLink"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/challenge", "Auth.Challenge", "auth.requestChallenge"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/complete", "Auth.Complete", "auth.completePublicKeyAuthentication"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/register", "Auth.Register", "auth.beginPublicKeyRegistration"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/revoke-request", "Auth.RequestKeyRevocation", "auth.requestKeyRevocation"),
-            new StarhermitOperationCoverage("GET", "/api/v1/auth/public-key/revoke/confirm", "Auth.ConfirmKeyRevocation", "auth.confirmKeyRevocation"),
-            new StarhermitOperationCoverage("GET", "/api/v1/auth/public-key/verify", "Auth.VerifyRegistration", "auth.verifyPublicKeyRegistration"),
+            new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/revoke/confirm", "Auth.ConfirmKeyRevocation", "auth.confirmKeyRevocation"),
+            new StarhermitOperationCoverage("POST", "/api/v1/auth/public-key/verify", "Auth.VerifyRegistration", "auth.verifyPublicKeyRegistration"),
             new StarhermitOperationCoverage("POST", "/api/v1/auth/refresh", "Auth.Refresh", "auth.refresh"),
             new StarhermitOperationCoverage("GET", "/api/v1/chat/conversations", "Chat.GetConversations", "chat.getConversations"),
             new StarhermitOperationCoverage("POST", "/api/v1/chat/conversations", "Chat.CreateConversation", "chat.createDirectConversation"),
@@ -234,8 +234,11 @@ namespace Starhermit.Tests
         /// <summary>Operations deliberately left untyped, each with its reason.</summary>
         public static readonly StarhermitOperationCoverage[] Classified =
         {
+            new StarhermitOperationCoverage("GET", "/api/v1/auth/oauth/link/confirm", "Auth.ConfirmIdentityLinkPage", null, "Opened from the identity-link email: a confirm page that changes nothing. Redeemed by Auth.ConfirmIdentityLinkAsync (POST)."),
             new StarhermitOperationCoverage("GET", "/api/v1/auth/oauth/{}/authorize", "Auth.OAuthAuthorize", null, "Opened in a browser rather than called: the SDK builds this URL with Auth.BuildAuthorizeUri."),
             new StarhermitOperationCoverage("GET", "/api/v1/auth/oauth/{}/callback", "Auth.OAuthCallback", null, "Followed by the browser during OAuth, never called by the SDK; its result arrives through IStarhermitOAuthBrowser."),
+            new StarhermitOperationCoverage("GET", "/api/v1/auth/public-key/revoke/confirm", "Auth.ConfirmKeyRevocationPage", null, "Opened from the revocation email: a confirm page that changes nothing. Redeemed by Auth.ConfirmKeyRevocationAsync (POST)."),
+            new StarhermitOperationCoverage("GET", "/api/v1/auth/public-key/verify", "Auth.VerifyRegistrationPage", null, "Opened from the verification email: a confirm page that changes nothing. Redeemed by Auth.VerifyPublicKeyRegistrationAsync (POST)."),
             new StarhermitOperationCoverage("GET", "/api/v1/game-host/{}/fallback/{}", "GameHostAssets.Get", null, "Served to the browser that hosts a platform-hosted game, not called by a game client."),
             new StarhermitOperationCoverage("POST", "/api/v1/webhooks/email/resend", "EmailWebhook.Resend", null, "Server-to-server: the deployment's email provider posts delivery events here. A game client has no part in it."),
         };
