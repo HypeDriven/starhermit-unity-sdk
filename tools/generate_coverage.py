@@ -175,6 +175,13 @@ CLASSIFIED = {
         "Opened from the revocation email: a confirm page that changes nothing. Redeemed by Auth.ConfirmKeyRevocationAsync (POST).",
     ("GET", "/api/v1/auth/oauth/link/confirm"):
         "Opened from the identity-link email: a confirm page that changes nothing. Redeemed by Auth.ConfirmIdentityLinkAsync (POST).",
+    ("GET", "/api/v1/auth/games/{}/sign-in"):
+        "An HTML sign-in chooser a browser game opens in a page of its own. A client building its own buttons reads Auth.GetOAuthProvidersAsync.",
+    # nginx in front of the game host calls these while serving a hosted game's files.
+    ("GET", "/api/v1/game-host/{}/cache-policy"):
+        "Called by the game host's nginx (auth_request) to obtain a hosted file's cache header, not by a game client.",
+    ("GET", "/api/v1/game-host/{}/cors-preflight"):
+        "Called by the game host's nginx to answer a CORS preflight for a hosted game's files, not by a game client.",
 }
 
 

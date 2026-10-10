@@ -114,6 +114,95 @@ namespace Starhermit
             return SendAsync(request, "realtime.quickJoin", StarhermitRoom.Read, cancellationToken);
         }
 
+        /// <summary>
+        /// Lists rooms anyone may find: listed rooms still filling and, when asked, running matches
+        /// that take players mid-match and have a seat free.
+        /// </summary>
+        /// <param name="gameSlug">Game to list; defaults to the configured slug.</param>
+        /// <param name="limit">Most rooms to return; the deployment caps it.</param>
+        /// <param name="includeInProgress">Also list running matches with a vacant seat.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The rooms, without join codes or rosters.</returns>
+        public async Task<IReadOnlyList<StarhermitRoomSummary>> BrowseRoomsAsync(
+            string? gameSlug = null,
+            int? limit = null,
+            bool includeInProgress = false,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Get("realtime/rooms")
+                .WithQuery("gameSlug", gameSlug ?? Options.GameSlug)
+                .WithQuery("limit", limit)
+                .WithQuery("includeInProgress", includeInProgress ? true : (bool?)null);
+            var json = await SendJsonAsync(request, "realtime.browseRooms", cancellationToken).ConfigureAwait(false);
+            return json.AsList(StarhermitRoomSummary.Read);
+        }
+
+        /// <summary>
+        /// Takes a seat in the room a join code names. Works on an unlisted or not-yet-open room:
+        /// holding the code is the invitation. Spacing and case do not matter.
+        /// </summary>
+        /// <param name="joinCode">The code the host shared.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The room the caller joined.</returns>
+        public Task<StarhermitRoom> JoinByCodeAsync(string joinCode, CancellationToken cancellationToken = default)
+        {
+            if (joinCode == null) throw new ArgumentNullException(nameof(joinCode));
+            return SendAsync(
+                WithBody(Post("realtime/rooms/join-by-code"), writer => writer.Write("joinCode", joinCode)),
+                "realtime.joinByCode",
+                StarhermitRoom.Read,
+                cancellationToken);
+        }
+
+        /// <summary>Lists every room the caller holds a seat in, persistent worlds included, newest first.</summary>
+        /// <param name="gameSlug">Only rooms for this game, or null for all.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The rooms; empty when there are none.</returns>
+        public async Task<IReadOnlyList<StarhermitRoom>> GetJoinedRoomsAsync(
+            string? gameSlug = null,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Get("realtime/rooms/joined").WithQuery("gameSlug", gameSlug);
+            var json = await SendJsonAsync(request, "realtime.getJoinedRooms", cancellationToken).ConfigureAwait(false);
+            return json.AsList(StarhermitRoom.Read);
+        }
+
+        /// <summary>Host only: renames, lists or unlists a room, or changes its metadata and backfill.</summary>
+        /// <param name="roomId">The room.</param>
+        /// <param name="update">What to change.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The room as it stands after the change.</returns>
+        /// <exception cref="StarhermitConflictException">The room changed since <see cref="StarhermitRoomUpdate.ExpectedRevision"/>.</exception>
+        public Task<StarhermitRoom> UpdateRoomAsync(Guid roomId, StarhermitRoomUpdate update, CancellationToken cancellationToken = default)
+        {
+            if (update == null) throw new ArgumentNullException(nameof(update));
+            return SendAsync(
+                WithBody(Patch($"realtime/rooms/{Escape(roomId)}"), update.Write),
+                "realtime.updateRoom",
+                StarhermitRoom.Read,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Host only: puts the room's roster into matchmaking as a party. The party fills one team and
+        /// is matched atomically against others of the same size.
+        /// </summary>
+        /// <param name="roomId">The room.</param>
+        /// <param name="queues">Queue keys from <see cref="StarhermitGameClient.GetQueuesAsync"/>, or null for any shape the party fits.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The party's ticket.</returns>
+        public Task<StarhermitMatchmakingTicket> MatchmakeRoomAsync(
+            Guid roomId,
+            IEnumerable<string>? queues = null,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Post($"realtime/rooms/{Escape(roomId)}/matchmake");
+            if (queues != null)
+                foreach (var queue in queues)
+                    request.WithQuery("queues", queue);
+            return SendAsync(request, "realtime.matchmakeRoom", StarhermitMatchmakingTicket.Read, cancellationToken);
+        }
+
         /// <summary>Reads one room.</summary>
         /// <param name="roomId">The room to read.</param>
         /// <param name="cancellationToken">Cancels the request.</param>

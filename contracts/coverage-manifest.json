@@ -1,9 +1,9 @@
 {
   "apiVersion": "v1",
   "generatedFrom": "Platform.Api controllers",
-  "operationCount": 195,
-  "mappedCount": 182,
-  "classifiedCount": 7,
+  "operationCount": 243,
+  "mappedCount": 227,
+  "classifiedCount": 10,
   "operations": [
     {
       "operationId": "Activity.StartExternalLaunch",
@@ -88,6 +88,13 @@
       "path": "/api/v1/auth/oauth/link/confirm",
       "source": "AuthController.cs",
       "sdkOperation": "auth.confirmIdentityLink"
+    },
+    {
+      "operationId": "Auth.OAuthProviders",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/providers",
+      "source": "AuthController.cs",
+      "sdkOperation": "auth.getOAuthProviders"
     },
     {
       "operationId": "Auth.Challenge",
@@ -314,6 +321,13 @@
       "sdkOperation": "games.putControls"
     },
     {
+      "operationId": "GameDiagnostics.Get",
+      "method": "GET",
+      "path": "/api/v1/games/{}/diagnostics",
+      "source": "GameDiagnosticsController.cs",
+      "sdkOperation": "games.getDiagnostics"
+    },
+    {
       "operationId": "Games.ListInvites",
       "method": "GET",
       "path": "/api/v1/games/{}/invites",
@@ -349,6 +363,20 @@
       "sdkOperation": "games.acquireLaunchToken"
     },
     {
+      "operationId": "Games.GetLeaderboards",
+      "method": "GET",
+      "path": "/api/v1/games/{}/leaderboards",
+      "source": "GamesController.cs",
+      "sdkOperation": "games.getLeaderboards"
+    },
+    {
+      "operationId": "Games.GetLinkedAchievements",
+      "method": "GET",
+      "path": "/api/v1/games/{}/linked-achievements/{}",
+      "source": "GamesController.cs",
+      "sdkOperation": "games.getLinkedAchievements"
+    },
+    {
       "operationId": "Games.CancelMatchmaking",
       "method": "DELETE",
       "path": "/api/v1/games/{}/matchmaking",
@@ -370,6 +398,13 @@
       "sdkOperation": "games.enqueueMatchmaking"
     },
     {
+      "operationId": "Games.Queues",
+      "method": "GET",
+      "path": "/api/v1/games/{}/queues",
+      "source": "GamesController.cs",
+      "sdkOperation": "games.getQueues"
+    },
+    {
       "operationId": "Games.MyReplays",
       "method": "GET",
       "path": "/api/v1/games/{}/replays/mine",
@@ -382,6 +417,20 @@
       "path": "/api/v1/games/{}/replays/{}",
       "source": "GamesController.cs",
       "sdkOperation": "games.getReplay"
+    },
+    {
+      "operationId": "GameReports.File",
+      "method": "POST",
+      "path": "/api/v1/games/{}/reports",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "games.fileReport"
+    },
+    {
+      "operationId": "GameReports.Mine",
+      "method": "GET",
+      "path": "/api/v1/games/{}/reports/mine",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "games.getMyReports"
     },
     {
       "operationId": "Games.GetServerSession",
@@ -417,6 +466,20 @@
       "path": "/api/v1/games/{}/sessions/{}",
       "source": "GamesController.cs",
       "sdkOperation": "games.getSession"
+    },
+    {
+      "operationId": "Games.LeaveSession",
+      "method": "POST",
+      "path": "/api/v1/games/{}/sessions/{}/leave",
+      "source": "GamesController.cs",
+      "sdkOperation": "games.leaveSession"
+    },
+    {
+      "operationId": "Games.GetSessionRecovery",
+      "method": "GET",
+      "path": "/api/v1/games/{}/sessions/{}/recovery",
+      "source": "GamesController.cs",
+      "sdkOperation": "games.getSessionRecovery"
     },
     {
       "operationId": "Games.DeleteSettings",
@@ -468,6 +531,34 @@
       "sdkOperation": "games.putSetting"
     },
     {
+      "operationId": "GameWebhooks.List",
+      "method": "GET",
+      "path": "/api/v1/games/{}/webhooks",
+      "source": "GameWebhooksController.cs",
+      "sdkOperation": "games.getWebhooks"
+    },
+    {
+      "operationId": "GameWebhooks.Create",
+      "method": "POST",
+      "path": "/api/v1/games/{}/webhooks",
+      "source": "GameWebhooksController.cs",
+      "sdkOperation": "games.createWebhook"
+    },
+    {
+      "operationId": "GameWebhooks.Delete",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/webhooks/{}",
+      "source": "GameWebhooksController.cs",
+      "sdkOperation": "games.deleteWebhook"
+    },
+    {
+      "operationId": "GameWebhooks.Resume",
+      "method": "POST",
+      "path": "/api/v1/games/{}/webhooks/{}/resume",
+      "source": "GameWebhooksController.cs",
+      "sdkOperation": "games.resumeWebhook"
+    },
+    {
       "operationId": "GitHubGames.ListAll",
       "method": "GET",
       "path": "/api/v1/github-games",
@@ -487,6 +578,13 @@
       "path": "/api/v1/github-games/{}/icon",
       "source": "GitHubGamesController.cs",
       "sdkOperation": "browserGames.getIcon"
+    },
+    {
+      "operationId": "GitHubGames.GetReleaseNotes",
+      "method": "GET",
+      "path": "/api/v1/github-games/{}/release-notes",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.getReleaseNotes"
     },
     {
       "operationId": "Leaderboards.GetLeaderboards",
@@ -692,6 +790,13 @@
       "sdkOperation": "browserGames.submit"
     },
     {
+      "operationId": "GitHubGames.ListRemoved",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/removed",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.listRemoved"
+    },
+    {
       "operationId": "GitHubGames.CreateFromFolder",
       "method": "POST",
       "path": "/api/v1/me/github-games/upload",
@@ -706,6 +811,34 @@
       "sdkOperation": "browserGames.delete"
     },
     {
+      "operationId": "GitHubGames.ListOwnedAchievements",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/achievements",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.getAchievements"
+    },
+    {
+      "operationId": "GitHubGames.CreateOwnedAchievement",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/achievements",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.createAchievement"
+    },
+    {
+      "operationId": "GitHubGames.DeleteOwnedAchievement",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/achievements/{}",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.deleteAchievement"
+    },
+    {
+      "operationId": "GitHubGames.UpdateOwnedAchievement",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/achievements/{}",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.updateAchievement"
+    },
+    {
       "operationId": "GitHubGames.UploadBundle",
       "method": "POST",
       "path": "/api/v1/me/github-games/{}/bundle",
@@ -718,6 +851,27 @@
       "path": "/api/v1/me/github-games/{}/claim",
       "source": "GitHubGamesController.cs",
       "sdkOperation": "browserGames.claim"
+    },
+    {
+      "operationId": "GameReports.ListCrashes",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/crashes",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getContainerCrashes"
+    },
+    {
+      "operationId": "GameReports.GetCrash",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/crashes/{}",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getContainerCrash"
+    },
+    {
+      "operationId": "GameReports.ContainerLogs",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/logs",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getContainerLogs"
     },
     {
       "operationId": "GitHubGames.ClearCoverArt",
@@ -755,6 +909,97 @@
       "sdkOperation": "browserGames.setHosting"
     },
     {
+      "operationId": "GitHubGames.ListOwnedLeaderboards",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/leaderboards",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.getLeaderboards"
+    },
+    {
+      "operationId": "GitHubGames.CreateOwnedLeaderboard",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/leaderboards",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.createLeaderboard"
+    },
+    {
+      "operationId": "GitHubGames.DeleteOwnedLeaderboard",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/leaderboards/{}",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.deleteLeaderboard"
+    },
+    {
+      "operationId": "GitHubGames.UpdateOwnedLeaderboard",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/leaderboards/{}",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.updateLeaderboard"
+    },
+    {
+      "operationId": "GitHubGames.ResetPlayerElo",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/players/{}/elo",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.resetPlayerElo"
+    },
+    {
+      "operationId": "GameReports.ListReports",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getReports"
+    },
+    {
+      "operationId": "GameReports.DeleteReport",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.deleteReport"
+    },
+    {
+      "operationId": "GameReports.GetReport",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getReport"
+    },
+    {
+      "operationId": "GameReports.SetStatus",
+      "method": "PATCH",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.setReportStatus"
+    },
+    {
+      "operationId": "GameReports.GetAttachment",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports/{}/attachments/{}",
+      "source": "GameReportsController.cs",
+      "sdkOperation": "browserGames.getReportAttachment"
+    },
+    {
+      "operationId": "GitHubGames.Restore",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/restore",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.restore"
+    },
+    {
+      "operationId": "GitHubGames.GetSessions",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/sessions",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.getSessions"
+    },
+    {
+      "operationId": "GitHubGames.EndSession",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/sessions/{}",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.endSession"
+    },
+    {
       "operationId": "GitHubGames.GetStats",
       "method": "GET",
       "path": "/api/v1/me/github-games/{}/stats",
@@ -767,6 +1012,13 @@
       "path": "/api/v1/me/github-games/{}/transfer",
       "source": "GitHubGamesController.cs",
       "sdkOperation": "browserGames.transfer"
+    },
+    {
+      "operationId": "GitHubGames.ChangeUrl",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/url",
+      "source": "GitHubGamesController.cs",
+      "sdkOperation": "browserGames.changeUrl"
     },
     {
       "operationId": "Presence.Heartbeat",
@@ -830,6 +1082,13 @@
       "path": "/api/v1/me/public-keys/all",
       "source": "MePublicKeysController.cs",
       "sdkOperation": "me.revokeAllPublicKeys"
+    },
+    {
+      "operationId": "MePublicKeys.RevokeCurrentPublicKey",
+      "method": "DELETE",
+      "path": "/api/v1/me/public-keys/current",
+      "source": "MePublicKeysController.cs",
+      "sdkOperation": "me.revokeCurrentPublicKey"
     },
     {
       "operationId": "MePublicKeys.RevokePublicKey",
@@ -1035,6 +1294,20 @@
       "sdkOperation": "ratings.getReviews"
     },
     {
+      "operationId": "RealtimeTickets.Issue",
+      "method": "POST",
+      "path": "/api/v1/realtime/connection-tickets",
+      "source": "RealtimeTicketsController.cs",
+      "sdkOperation": "games.issueConnectionTicket"
+    },
+    {
+      "operationId": "Realtime.BrowseRooms",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms",
+      "source": "RealtimeController.cs",
+      "sdkOperation": "realtime.browseRooms"
+    },
+    {
       "operationId": "Realtime.CreateRoom",
       "method": "POST",
       "path": "/api/v1/realtime/rooms",
@@ -1063,6 +1336,20 @@
       "sdkOperation": "realtime.declineInvite"
     },
     {
+      "operationId": "Realtime.JoinByCode",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/join-by-code",
+      "source": "RealtimeController.cs",
+      "sdkOperation": "realtime.joinByCode"
+    },
+    {
+      "operationId": "Realtime.JoinedRooms",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms/joined",
+      "source": "RealtimeController.cs",
+      "sdkOperation": "realtime.getJoinedRooms"
+    },
+    {
       "operationId": "Realtime.MyActiveRoom",
       "method": "GET",
       "path": "/api/v1/realtime/rooms/mine",
@@ -1084,6 +1371,13 @@
       "sdkOperation": "realtime.getRoom"
     },
     {
+      "operationId": "Realtime.UpdateRoom",
+      "method": "PATCH",
+      "path": "/api/v1/realtime/rooms/{}",
+      "source": "RealtimeController.cs",
+      "sdkOperation": "realtime.updateRoom"
+    },
+    {
       "operationId": "Realtime.CreateInvite",
       "method": "POST",
       "path": "/api/v1/realtime/rooms/{}/invites",
@@ -1096,6 +1390,13 @@
       "path": "/api/v1/realtime/rooms/{}/leave",
       "source": "RealtimeController.cs",
       "sdkOperation": "realtime.leaveRoom"
+    },
+    {
+      "operationId": "Realtime.Matchmake",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/matchmake",
+      "source": "RealtimeController.cs",
+      "sdkOperation": "realtime.matchmakeRoom"
     },
     {
       "operationId": "Realtime.OpenRoom",
@@ -1210,6 +1511,13 @@
       "sdkOperation": "software.startLaunch"
     },
     {
+      "operationId": "Terms.Get",
+      "method": "GET",
+      "path": "/api/v1/terms",
+      "source": "TermsController.cs",
+      "sdkOperation": "terms.get"
+    },
+    {
       "operationId": "Time.GetLocalServerTime",
       "method": "GET",
       "path": "/api/v1/time",
@@ -1278,9 +1586,23 @@
       "path": "/api/v1/voice/rooms/{}/mute",
       "source": "VoiceController.cs",
       "sdkOperation": "voice.setMute"
+    },
+    {
+      "operationId": "Voice.SetServerMute",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/participants/{}/server-mute",
+      "source": "VoiceController.cs",
+      "sdkOperation": "voice.setServerMute"
     }
   ],
   "classified": [
+    {
+      "operationId": "Auth.GameSignIn",
+      "method": "GET",
+      "path": "/api/v1/auth/games/{}/sign-in",
+      "source": "AuthController.cs",
+      "classification": "An HTML sign-in chooser a browser game opens in a page of its own. A client building its own buttons reads Auth.GetOAuthProvidersAsync."
+    },
     {
       "operationId": "Auth.ConfirmIdentityLinkPage",
       "method": "GET",
@@ -1315,6 +1637,20 @@
       "path": "/api/v1/auth/public-key/verify",
       "source": "AuthController.cs",
       "classification": "Opened from the verification email: a confirm page that changes nothing. Redeemed by Auth.VerifyPublicKeyRegistrationAsync (POST)."
+    },
+    {
+      "operationId": "GameHostAssets.CachePolicy",
+      "method": "GET",
+      "path": "/api/v1/game-host/{}/cache-policy",
+      "source": "GameHostAssetsController.cs",
+      "classification": "Called by the game host's nginx (auth_request) to obtain a hosted file's cache header, not by a game client."
+    },
+    {
+      "operationId": "GameHostAssets.CorsPreflight",
+      "method": "GET",
+      "path": "/api/v1/game-host/{}/cors-preflight",
+      "source": "GameHostAssetsController.cs",
+      "classification": "Called by the game host's nginx to answer a CORS preflight for a hosted game's files, not by a game client."
     },
     {
       "operationId": "GameHostAssets.Get",

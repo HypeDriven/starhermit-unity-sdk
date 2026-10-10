@@ -131,8 +131,12 @@ namespace Starhermit.Tests
                 (403, typeof(StarhermitAuthorizationException)),
                 (404, typeof(StarhermitNotFoundException)),
                 (409, typeof(StarhermitConflictException)),
+                (412, typeof(StarhermitPreconditionFailedException)),
+                (413, typeof(StarhermitQuotaExceededException)),
                 (429, typeof(StarhermitRateLimitException)),
-                (500, typeof(StarhermitServerException))
+                (500, typeof(StarhermitServerException)),
+                // A full account is a quota, not an outage: not a server error, and not retried.
+                (507, typeof(StarhermitQuotaExceededException))
             };
 
             foreach (var (status, exceptionType) in cases)
@@ -187,6 +191,41 @@ namespace Starhermit.Tests
             var error = Assert.ThrowsAsync<StarhermitRateLimitException>(() => client.Me.GetProfileAsync());
 
             Assert.AreEqual(TimeSpan.FromSeconds(42), error!.RetryAfter);
+        }
+
+        [Test]
+        public async Task RateLimited_NamesTheLimitInForceAndItsCode()
+        {
+            var headers = new System.Collections.Generic.Dictionary<string, string> { ["Retry-After"] = "12" };
+            var body = "{\"error\":\"Too many requests: this account may make 30 per minute of these.\",\"code\":\"rate_limited\"," +
+                       "\"limit\":30,\"limitKey\":\"cloud_saves.writes_per_minute\"}";
+            var transport = new FakeTransport().Always(_ => new FakeResponse(429, body, headers));
+            using var client = await TestHarness.SignedInAsync(transport);
+
+            var error = Assert.ThrowsAsync<StarhermitRateLimitException>(() => client.Me.GetProfileAsync());
+
+            Assert.AreEqual("rate_limited", error!.ErrorCode, "an error code survives the redaction of the body it came in");
+            Assert.AreEqual(30, error.Limit);
+            Assert.AreEqual("cloud_saves.writes_per_minute", error.LimitKey);
+            Assert.IsNull(error.Used);
+        }
+
+        [Test]
+        public async Task ACodeThatIsNotAnErrorCode_StaysRedacted()
+        {
+            // "code" is redacted by name because OAuth authorization codes travel under it. Only the
+            // snake_case shape the API's own error codes have is read back from the raw body.
+            foreach (var secret in new[] { "4/0AbCdEfGh", "a1b2c3d4e5f6a7b8c9d0", "0123456789abcdef", "Rate_Limited" })
+            {
+                var transport = new FakeTransport().Always(_ => new FakeResponse(400, "{\"error\":\"bad code\",\"code\":\"" + secret + "\"}"));
+                using var client = await TestHarness.SignedInAsync(transport);
+
+                var error = Assert.CatchAsync<StarhermitApiException>(() => client.Me.GetProfileAsync());
+
+                Assert.AreNotEqual(secret, error!.ErrorCode, secret);
+                StringAssert.DoesNotContain(secret, error.RawBody);
+                StringAssert.DoesNotContain(secret, error.Message);
+            }
         }
 
         [Test]

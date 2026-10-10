@@ -13,8 +13,22 @@ namespace Starhermit
             SeatsPerTeam = json["seatsPerTeam"].AsInt32OrDefault();
             BackfillAfterSeconds = json["backfillAfterSeconds"].AsInt32OrDefault();
             AiPlayers = json["aiPlayers"].AsInt32OrDefault();
+            BackfillAiPlayers = json["backfillAiPlayers"].AsInt32OrNull();
+            JoinInProgress = json["joinInProgress"].AsBooleanOrDefault();
             Metadata = json["metadata"];
         }
+
+        /// <summary>
+        /// Most empty seats the start-time backfill may give to AI players; null fills every empty
+        /// seat, 0 starts the match with empty seats left empty.
+        /// </summary>
+        public int? BackfillAiPlayers { get; }
+
+        /// <summary>
+        /// True when the room keeps taking players after its match starts: a seat given up is vacated
+        /// rather than handed to an AI, and a newcomer is admitted to the running session.
+        /// </summary>
+        public bool JoinInProgress { get; }
 
         /// <summary>How many teams the room has.</summary>
         public int TeamCount { get; }
@@ -103,7 +117,29 @@ namespace Starhermit
             StartedAt = json["startedAt"].AsDateTimeOffsetOrNull();
             ClosedAt = json["closedAt"].AsDateTimeOffsetOrNull();
             Result = json["result"];
+            Name = json["name"].AsStringOrNull();
+            JoinCode = json["joinCode"].AsStringOrNull();
+            IsVisible = json["isVisible"].AsBooleanOrDefault();
+            Revision = json["revision"].AsInt32OrDefault();
         }
+
+        /// <summary>The name the host gave the room, if any.</summary>
+        public string? Name { get; }
+
+        /// <summary>
+        /// The code that takes a seat in this room - shown only to people already in it. It is a
+        /// capability: share it with the players you mean to invite, and never log it.
+        /// </summary>
+        public string? JoinCode { get; }
+
+        /// <summary>True when the room is listed in the room browser.</summary>
+        public bool IsVisible { get; }
+
+        /// <summary>
+        /// The configuration's version. Pass it to <see cref="StarhermitRoomUpdate.ExpectedRevision"/>
+        /// so a concurrent change is refused rather than overwritten. The roster does not change it.
+        /// </summary>
+        public int Revision { get; }
 
         /// <summary>Room id.</summary>
         public Guid Id { get; }
@@ -145,6 +181,117 @@ namespace Starhermit
         /// <param name="json">Response body.</param>
         /// <returns>The parsed model.</returns>
         public static StarhermitRoom Read(JsonValue json) => new StarhermitRoom(json);
+    }
+
+    /// <summary>
+    /// One row of the room browser. Carries no join code and no roster: a listing is readable by
+    /// anyone who can see the game.
+    /// </summary>
+    public sealed class StarhermitRoomSummary : StarhermitModel
+    {
+        private StarhermitRoomSummary(JsonValue json) : base(json)
+        {
+            Id = json["id"].AsGuidOrNull() ?? Guid.Empty;
+            GameSlug = json["gameSlug"].AsStringOrNull() ?? string.Empty;
+            Name = json["name"].AsStringOrNull();
+            HostUsername = json["hostUsername"].AsStringOrNull() ?? string.Empty;
+            Status = json["status"].AsStringOrNull() ?? string.Empty;
+            Players = json["players"].AsInt32OrDefault();
+            Capacity = json["capacity"].AsInt32OrDefault();
+            FreeSeats = json["freeSeats"].AsInt32OrDefault();
+            Metadata = json["metadata"];
+            CreatedAt = json["createdAt"].AsDateTimeOffsetOrNull();
+            OpenedAt = json["openedAt"].AsDateTimeOffsetOrNull();
+            StartedAt = json["startedAt"].AsDateTimeOffsetOrNull();
+            JoinInProgress = json["joinInProgress"].AsBooleanOrDefault();
+        }
+
+        /// <summary>Room id - join it with <see cref="StarhermitRealtimeRoomsClient.QuickJoinAsync"/> or an invite.</summary>
+        public Guid Id { get; }
+
+        /// <summary>The game the room is for.</summary>
+        public string GameSlug { get; }
+
+        /// <summary>The room's name, if the host gave it one.</summary>
+        public string? Name { get; }
+
+        /// <summary>Who hosts it.</summary>
+        public string HostUsername { get; }
+
+        /// <summary>Room phase - see <see cref="StarhermitRoomStatuses"/>.</summary>
+        public string Status { get; }
+
+        /// <summary>Seats taken.</summary>
+        public int Players { get; }
+
+        /// <summary>Seats in all.</summary>
+        public int Capacity { get; }
+
+        /// <summary>Seats a newcomer could take.</summary>
+        public int FreeSeats { get; }
+
+        /// <summary>Room metadata, in whatever shape the game defines.</summary>
+        public JsonValue Metadata { get; }
+
+        /// <summary>When the room was created.</summary>
+        public DateTimeOffset? CreatedAt { get; }
+
+        /// <summary>When it was opened.</summary>
+        public DateTimeOffset? OpenedAt { get; }
+
+        /// <summary>When its match started, for a running match that still takes players.</summary>
+        public DateTimeOffset? StartedAt { get; }
+
+        /// <summary>True when the room takes players mid-match.</summary>
+        public bool JoinInProgress { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitRoomSummary Read(JsonValue json) => new StarhermitRoomSummary(json);
+    }
+
+    /// <summary>Changes a host makes to a room's configuration. Unset members are left alone.</summary>
+    public sealed class StarhermitRoomUpdate
+    {
+        /// <summary>New name; an empty string clears it.</summary>
+        public Optional<string> Name { get; set; }
+
+        /// <summary>Whether the room is listed in the room browser.</summary>
+        public Optional<bool> IsVisible { get; set; }
+
+        /// <summary>Replacement metadata, in whatever shape the game defines.</summary>
+        public Optional<JsonValue> Metadata { get; set; }
+
+        /// <summary>Most empty seats the start-time backfill may give to AI players.</summary>
+        public Optional<int> BackfillAiPlayers { get; set; }
+
+        /// <summary>True to go back to filling every empty seat with AI at start.</summary>
+        public bool BackfillAllEmptySeats { get; set; }
+
+        /// <summary>Whether the room keeps taking players after its match starts.</summary>
+        public Optional<bool> JoinInProgress { get; set; }
+
+        /// <summary>
+        /// The <see cref="StarhermitRoom.Revision"/> the change was made against. When set, a change
+        /// someone else made in between answers <see cref="StarhermitConflictException"/> instead of
+        /// one of the two edits vanishing.
+        /// </summary>
+        public int? ExpectedRevision { get; set; }
+
+        /// <summary>Writes the update as the API's request body.</summary>
+        /// <param name="writer">Writer positioned inside the request object.</param>
+        public void Write(JsonWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            if (Name.IsSet) writer.Write("name", Name.Value);
+            if (IsVisible.IsSet) writer.Write("isVisible", IsVisible.Value);
+            if (Metadata.IsSet) writer.Write("metadata", Metadata.Value ?? JsonValue.Null);
+            if (BackfillAiPlayers.IsSet) writer.Write("backfillAiPlayers", BackfillAiPlayers.Value);
+            if (BackfillAllEmptySeats) writer.Write("backfillAllEmptySeats", true);
+            if (JoinInProgress.IsSet) writer.Write("joinInProgress", JoinInProgress.Value);
+            writer.WriteIfPresent("expectedRevision", ExpectedRevision);
+        }
     }
 
     /// <summary>An invitation to a realtime room.</summary>

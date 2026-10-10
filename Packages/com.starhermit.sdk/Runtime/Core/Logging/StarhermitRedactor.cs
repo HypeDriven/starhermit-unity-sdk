@@ -49,7 +49,8 @@ namespace Starhermit
             "sp",
             "sv",
             "invoke_key",
-            "key"
+            "key",
+            "ticket"
         };
 
         private static readonly HashSet<string> SecretJsonMembers = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -80,7 +81,10 @@ namespace Starhermit
             "upload_url",
             "downloadurl",
             "download_url",
-            "url"
+            "url",
+            "ticket",
+            "joincode",
+            "join_code"
         };
 
         /// <summary>True when a header's value must never be logged.</summary>

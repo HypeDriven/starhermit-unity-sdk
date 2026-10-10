@@ -39,13 +39,17 @@ Redaction is structural - by header, query-parameter and JSON member *name*, at 
 credential this SDK has never seen is still removed:
 
 - `Authorization`, `Cookie`, invoke-key and API-key headers
-- `access_token`, `refresh_token`, `code`, `state`, signature and signed-storage query parameters
-- `accessToken`, `refreshToken`, `privateKey`, `keyData`, `invokeKey`, `signedUrl`, `uploadUrl`… in
-  bodies
+- `access_token`, `refresh_token`, `ticket`, `code`, `state`, signature and signed-storage query
+  parameters
+- `accessToken`, `refreshToken`, `privateKey`, `keyData`, `invokeKey`, `signedUrl`, `uploadUrl`,
+  `secret` (a webhook's signing secret), `ticket` (a socket connection ticket), `joinCode` (a room's
+  join code, which takes a seat)… in bodies
 - URL fragments entirely - that is where OAuth returns tokens
 
 `StarhermitSession.ToString()`, stored-session and scoped-token `ToString()` contain no token
-material. Exceptions carry a redacted, size-capped body. Telemetry receives event name, duration,
+material. Exceptions carry a redacted, size-capped body; an API error code is read back from the raw
+body only when it has the snake_case shape of one (`rate_limited`), so an OAuth code sharing the
+`code` name never reaches `ErrorCode`. Telemetry receives event name, duration,
 status family, retry count and request id - never a URL, a body, or anything a player typed.
 
 ## Transport

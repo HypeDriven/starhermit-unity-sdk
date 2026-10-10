@@ -261,4 +261,65 @@ namespace Starhermit
         /// <summary>Signed in by proving control of a registered public key.</summary>
         public const string PublicKey = "public_key";
     }
+    /// <summary>An OAuth provider the deployment offers.</summary>
+    public sealed class StarhermitOAuthProvider : StarhermitModel
+    {
+        private StarhermitOAuthProvider(JsonValue json) : base(json)
+        {
+            Provider = json["provider"].AsStringOrNull() ?? string.Empty;
+            DisplayName = json["displayName"].AsStringOrNull() ?? string.Empty;
+            AuthorizeUrl = json["authorizeUrl"].AsStringOrNull() ?? string.Empty;
+            LinksExistingAccountsByEmail = json["linksExistingAccountsByEmail"].AsBooleanOrDefault();
+        }
+
+        /// <summary>The provider key to pass to <see cref="StarhermitAuthClient.BuildAuthorizeUri"/>.</summary>
+        public string Provider { get; }
+
+        /// <summary>The name to put on the button.</summary>
+        public string DisplayName { get; }
+
+        /// <summary>The deployment's own authorize URL for it.</summary>
+        public string AuthorizeUrl { get; }
+
+        /// <summary>
+        /// True when signing in through this provider finds an existing account by its email address.
+        /// When false, a player who first signed up another way gets a new account unless they link
+        /// this provider from their existing one.
+        /// </summary>
+        public bool LinksExistingAccountsByEmail { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitOAuthProvider Read(JsonValue json) => new StarhermitOAuthProvider(json);
+    }
+
+    /// <summary>A single-use credential for one socket handshake.</summary>
+    /// <remarks>
+    /// Pass it as <c>?ticket=</c>. It is a credential: the SDK redacts it from logs, and an
+    /// application must not record it either.
+    /// </remarks>
+    public sealed class StarhermitConnectionTicket : StarhermitModel
+    {
+        private StarhermitConnectionTicket(JsonValue json) : base(json)
+        {
+            Ticket = json["ticket"].AsStringOrNull()
+                     ?? throw new StarhermitSerializationException("The response carried no ticket.");
+            ExpiresInSeconds = json["expiresIn"].AsInt32OrDefault();
+        }
+
+        /// <summary>The ticket.</summary>
+        public string Ticket { get; }
+
+        /// <summary>Seconds until it can no longer be presented.</summary>
+        public int ExpiresInSeconds { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitConnectionTicket Read(JsonValue json) => new StarhermitConnectionTicket(json);
+
+        /// <inheritdoc />
+        public override string ToString() => "StarhermitConnectionTicket(***)";
+    }
 }

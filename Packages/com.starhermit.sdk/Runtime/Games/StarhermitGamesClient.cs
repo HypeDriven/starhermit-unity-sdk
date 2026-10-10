@@ -186,15 +186,36 @@ namespace Starhermit
                 StarhermitGameSession.Read,
                 cancellationToken);
 
-        /// <summary>Enters nearest-rating matchmaking.</summary>
+        /// <summary>Enters nearest-rating matchmaking for any shape of match the game accepts.</summary>
         /// <param name="cancellationToken">Cancels the request.</param>
         /// <returns>The ticket.</returns>
         public Task<StarhermitMatchmakingTicket> EnqueueMatchmakingAsync(CancellationToken cancellationToken = default) =>
-            SendAsync(
-                Request("POST", "matchmaking"),
-                "games.enqueueMatchmaking",
-                StarhermitMatchmakingTicket.Read,
-                cancellationToken);
+            EnqueueMatchmakingAsync(null, cancellationToken);
+
+        /// <summary>Enters nearest-rating matchmaking for some of the game's match shapes.</summary>
+        /// <param name="queues">Keys from <see cref="GetQueuesAsync"/>, or null for every shape. An unknown
+        /// or empty subset is refused rather than read as "any".</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The ticket.</returns>
+        public Task<StarhermitMatchmakingTicket> EnqueueMatchmakingAsync(
+            IEnumerable<string>? queues,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Request("POST", "matchmaking");
+            if (queues != null)
+                foreach (var queue in queues)
+                    request.WithQuery("queues", queue);
+            return SendAsync(request, "games.enqueueMatchmaking", StarhermitMatchmakingTicket.Read, cancellationToken);
+        }
+
+        /// <summary>Lists the shapes of match this game accepts - 1v1, 2v2 and so on - so a client can offer them.</summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The queues; a game that declares none has one implicit 1v1.</returns>
+        public async Task<IReadOnlyList<StarhermitGameQueue>> GetQueuesAsync(CancellationToken cancellationToken = default)
+        {
+            var json = await SendJsonAsync(Request("GET", "queues"), "games.getQueues", cancellationToken).ConfigureAwait(false);
+            return json.AsList(StarhermitGameQueue.Read);
+        }
 
         /// <summary>Reads the caller's matchmaking ticket.</summary>
         /// <param name="cancellationToken">Cancels the request.</param>
@@ -408,6 +429,159 @@ namespace Starhermit
         public Task DeleteSettingAsync(string key, CancellationToken cancellationToken = default) =>
             SendAsync(Request("DELETE", $"settings/{Escape(key)}"), "games.deleteSetting", cancellationToken);
 
+        /// <summary>Lists the game's active leaderboards. Read entries with <see cref="StarhermitClient.Leaderboards"/>.</summary>
+        /// <remarks>Scores are submitted only by the game's server logic; a client cannot write to these boards.</remarks>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The leaderboards.</returns>
+        public async Task<IReadOnlyList<StarhermitLeaderboard>> GetLeaderboardsAsync(CancellationToken cancellationToken = default)
+        {
+            var json = await SendJsonAsync(Request("GET", "leaderboards"), "games.getLeaderboards", cancellationToken).ConfigureAwait(false);
+            return json.AsList(StarhermitLeaderboard.Read);
+        }
+
+        /// <summary>Reads what the caller has unlocked in another game, to open features earned there.</summary>
+        /// <param name="otherSlug">The other game's slug.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The other game's unlocked achievements, or a hidden result when the player keeps them private.</returns>
+        public Task<StarhermitLinkedAchievements> GetLinkedAchievementsAsync(string otherSlug, CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Request("GET", $"linked-achievements/{Escape(otherSlug)}"),
+                "games.getLinkedAchievements",
+                StarhermitLinkedAchievements.Read,
+                cancellationToken);
+
+        /// <summary>
+        /// Reads what it would take to bring a session back: checkpoint size and freshness, restore
+        /// limits, transport budgets and how long recovery data is kept. Its players and the game's
+        /// owner may read it.
+        /// </summary>
+        /// <param name="sessionId">The session.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The recovery description.</returns>
+        public Task<StarhermitSessionRecovery> GetSessionRecoveryAsync(Guid sessionId, CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Request("GET", $"sessions/{Escape(sessionId)}/recovery"),
+                "games.getSessionRecovery",
+                StarhermitSessionRecovery.Read,
+                cancellationToken);
+
+        /// <summary>
+        /// Gives up the caller's place in a persistent world. A world bound to a room is left through
+        /// the room instead. The last member leaving ends the world.
+        /// </summary>
+        /// <param name="sessionId">The session to leave.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>A task that completes once the caller is no longer a member.</returns>
+        public Task LeaveSessionAsync(Guid sessionId, CancellationToken cancellationToken = default) =>
+            SendAsync(Request("POST", $"sessions/{Escape(sessionId)}/leave"), "games.leaveSession", cancellationToken);
+
+        /// <summary>Files a crash or bug report with the game's developer.</summary>
+        /// <param name="report">The report.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The receipt.</returns>
+        /// <exception cref="StarhermitRateLimitException">The player has filed as many reports today as the game allows; see <see cref="StarhermitApiException.RetryAfter"/>.</exception>
+        /// <exception cref="StarhermitQuotaExceededException">The description or attachments are larger than the game allows.</exception>
+        public Task<StarhermitReportReceipt> FileReportAsync(StarhermitPlayerReport report, CancellationToken cancellationToken = default)
+        {
+            if (report == null) throw new ArgumentNullException(nameof(report));
+            return SendAsync(WithBody(Request("POST", "reports"), report.Write), "games.fileReport", StarhermitReportReceipt.Read, cancellationToken);
+        }
+
+        /// <summary>Lists the caller's own reports for this game and where each stands, newest first.</summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The reports.</returns>
+        public async Task<IReadOnlyList<StarhermitMyReport>> GetMyReportsAsync(CancellationToken cancellationToken = default)
+        {
+            var json = await SendJsonAsync(Request("GET", "reports/mine"), "games.getMyReports", cancellationToken).ConfigureAwait(false);
+            return json.AsList(StarhermitMyReport.Read);
+        }
+
+        /// <summary>
+        /// Exchanges this client's credential for a single-use connection ticket, for a socket
+        /// handshake that has to carry its credential in the URL.
+        /// </summary>
+        /// <remarks>
+        /// A ticket carries exactly the authority of the token that bought it - a launch-scoped client
+        /// gets a ticket fenced to this game - is valid only on a <c>/ws</c> path, and is spent by the
+        /// first handshake that presents it.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The ticket.</returns>
+        public Task<StarhermitConnectionTicket> IssueConnectionTicketAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Scoped(Post("realtime/connection-tickets")),
+                "games.issueConnectionTicket",
+                StarhermitConnectionTicket.Read,
+                cancellationToken);
+
+        /// <summary>Owner only: what the game is doing right now - sessions, script cost, matchmaking, webhooks and buffered writes.</summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The diagnostics.</returns>
+        public Task<StarhermitGameDiagnostics> GetDiagnosticsAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Request("GET", "diagnostics").WithCredential(StarhermitCredential.Account),
+                "games.getDiagnostics",
+                StarhermitGameDiagnostics.Read,
+                cancellationToken);
+
+        /// <summary>Owner only: lists the game's webhook endpoints.</summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The endpoints, without their secrets.</returns>
+        public async Task<IReadOnlyList<StarhermitWebhookEndpoint>> GetWebhooksAsync(CancellationToken cancellationToken = default)
+        {
+            var json = await SendJsonAsync(
+                    Request("GET", "webhooks").WithCredential(StarhermitCredential.Account),
+                    "games.getWebhooks",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return json.AsList(StarhermitWebhookEndpoint.Read);
+        }
+
+        /// <summary>Owner only: registers a URL for the platform to call when something happens in the game.</summary>
+        /// <remarks>
+        /// The URL must be https, carry no credentials and resolve to a public address; it is checked
+        /// again before every delivery. Keep the returned <see cref="StarhermitWebhookEndpoint.Secret"/>:
+        /// it is shown only now.
+        /// </remarks>
+        /// <param name="url">Where deliveries go.</param>
+        /// <param name="events">Event names to deliver, or null for the platform's default set.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The endpoint, with its signing secret.</returns>
+        public Task<StarhermitWebhookEndpoint> CreateWebhookAsync(
+            string url,
+            IEnumerable<string>? events = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (url == null) throw new ArgumentNullException(nameof(url));
+            var request = WithBody(Request("POST", "webhooks"), writer =>
+            {
+                writer.Write("url", url);
+                if (events != null) writer.WriteArray("events", events, (w, name) => w.WriteString(name));
+            }).WithCredential(StarhermitCredential.Account);
+            return SendAsync(request, "games.createWebhook", StarhermitWebhookEndpoint.Read, cancellationToken);
+        }
+
+        /// <summary>Owner only: removes a webhook endpoint and its pending deliveries.</summary>
+        /// <param name="endpointId">The endpoint.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>A task that completes once it is gone.</returns>
+        public Task DeleteWebhookAsync(Guid endpointId, CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Request("DELETE", $"webhooks/{Escape(endpointId)}").WithCredential(StarhermitCredential.Account),
+                "games.deleteWebhook",
+                cancellationToken);
+
+        /// <summary>Owner only: re-enables an endpoint the platform disabled for failing.</summary>
+        /// <param name="endpointId">The endpoint.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The endpoint.</returns>
+        public Task<StarhermitWebhookEndpoint> ResumeWebhookAsync(Guid endpointId, CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Request("POST", $"webhooks/{Escape(endpointId)}/resume").WithCredential(StarhermitCredential.Account),
+                "games.resumeWebhook",
+                StarhermitWebhookEndpoint.Read,
+                cancellationToken);
+
         private static void WriteSettings(JsonWriter writer, IReadOnlyDictionary<string, JsonValue> settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
@@ -425,7 +599,12 @@ namespace Starhermit
         private StarhermitRequest Request(string method, string suffix)
         {
             var path = string.IsNullOrEmpty(suffix) ? _prefix : $"{_prefix}/{suffix}";
-            var request = new StarhermitRequest(method, path).WithCredential(_credential);
+            return Scoped(new StarhermitRequest(method, path));
+        }
+
+        private StarhermitRequest Scoped(StarhermitRequest request)
+        {
+            request.WithCredential(_credential);
             // The pipeline needs the slug to pick this game's launch token; the header never leaves
             // the process.
             if (_credential == StarhermitCredential.Launch) request.WithHeader(StarhermitHeaders.GameSlug, Slug);

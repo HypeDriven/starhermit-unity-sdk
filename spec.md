@@ -4,7 +4,7 @@ Status: **implemented**, version 0.1.0. This document describes what the package
 
 Package name: `com.starhermit.sdk`
 Primary namespace: `Starhermit`
-API baseline: Starhermit REST API v1 and WebSocket API v1 as deployed on 2026-08-20
+API baseline: Starhermit REST API v1 and WebSocket API v1, inventoried from the backend source on 2026-10-10
 
 ## 1. What this is
 
@@ -22,7 +22,7 @@ Starhermit platform. It ships:
   builds.
 - High-level helpers (presence heartbeat, cloud-save synchroniser, message deduplicator) and a `Raw`
   client for endpoints a future deployment adds before the SDK types them.
-- 149 tests (144 hermetic, 5 against a live deployment), eight samples, XML documentation on every
+- 178 tests (173 hermetic, 5 against a live deployment), eight samples, XML documentation on every
   public member, and a generated coverage manifest that fails the build when an API operation has no
   SDK mapping.
 
@@ -140,7 +140,18 @@ headers, and a size-capped redacted body. Typed subclasses:
 `StarhermitBadRequestException`, `StarhermitValidationException` (field errors keyed by wire name),
 `StarhermitAuthenticationException`, `StarhermitAuthorizationException`, `StarhermitNotFoundException`,
 `StarhermitConflictException`, `StarhermitEntitlementException` (the API's `402`),
-`StarhermitRateLimitException`, `StarhermitServerException`.
+`StarhermitPreconditionFailedException` (`412`, with the version current now as `CurrentETag`),
+`StarhermitQuotaExceededException` (`413` for one oversized payload, `507` for full account storage),
+`StarhermitRateLimitException`, `StarhermitServerException`. A `507` is a quota, not an outage, so it
+is never a server exception.
+
+Limits are tuned per account and per game by the platform's operators, so a refusal names the number
+in force rather than the SDK guessing it: `Limit`, `Used` and `LimitKey` on every API exception are
+read from the body's `limit`, `used` and `limitKey`, and `ErrorCode` from its `code`
+(`rate_limited`, `cloud_save_too_large`, `cloud_save_slots_exhausted`, `cloud_save_quota_exceeded`,
+`no_public_key_session`, ...). `code` is also the name an OAuth authorization code travels under, so
+the body is redacted before it is kept; the error code is read back from the raw body only when it has
+the snake_case shape of an API error code, which a token never has.
 
 Transport failures raise `StarhermitTransportException` / `StarhermitTimeoutException` and are never
 dressed up as API responses. Protocol violations raise `StarhermitProtocolException`. Missing platform
@@ -188,7 +199,8 @@ through WebGL.
 
 Retries use bounded exponential backoff with jitter and honour `Retry-After` up to a cap. Only
 connection errors, timeouts, `408`, `429` and transient `5xx` are eligible, and only for idempotent
-requests with replayable bodies. `403`, `404`, `409` and validation failures are never retried. A POST
+requests with replayable bodies. `403`, `404`, `409`, `412`, `413`, `507` and validation failures are
+never retried. A POST
 opts in through `AsIdempotent`. A process-wide `StarhermitRetryBudget` stops several clients turning
 one outage into a retry storm.
 
@@ -208,6 +220,9 @@ caps, bounded outbound queues with explicit backpressure, ordered sends, and the
 
 Credentials ride the `Authorization` header where the platform allows it and `?access_token=`
 otherwise, because a browser cannot set handshake headers; the query token is redacted from every log.
+The deployment also issues single-use connection tickets for exactly that case
+(`Auth.IssueConnectionTicketAsync`, or a game client's for its launch token); the connections do not
+yet use them.
 Reconnection uses jittered backoff, re-acquires a current token before each attempt, and stops for good
 on authorization or policy closes. It never assumes membership survived: each protocol refetches or
 rejoins in `OnReconnectedAsync`, and a failure there is logged rather than treated as a broken socket.
@@ -216,12 +231,16 @@ rejoins in `OnReconnectedAsync`, and a failure there is logged rather than treat
 
 `client.Auth` covers the whole `/auth` surface:
 
-- `BuildAuthorizeUri`, `SignInWithOAuthAsync`, `CompleteOAuthAsync`, `ConfirmIdentityLinkAsync`.
+- `GetOAuthProvidersAsync` (anonymous: the providers the deployment offers, one button each, and
+  whether each recognises an existing account by email), `BuildAuthorizeUri`, `SignInWithOAuthAsync`,
+  `CompleteOAuthAsync`, `ConfirmIdentityLinkAsync`.
 - `BeginPublicKeyRegistrationAsync`, `VerifyPublicKeyRegistrationAsync`, `RequestKeyRevocationAsync`,
   `ConfirmKeyRevocationAsync`.
 - `RequestChallengeAsync`, `CompletePublicKeyAuthenticationAsync`, and `SignInWithPublicKeyAsync`
   which runs the whole flow through an injected `IStarhermitSigner`.
 - `ExchangeRefreshTokenAsync`, `SignOutAsync`, `AdoptSessionAsync`.
+- `IssueConnectionTicketAsync`: a single-use, `/ws`-only credential with the account session's
+  authority, for a socket handshake that has to carry its credential in the URL.
 
 Supported key types are `Ed25519`, `ECDSA-P256` and `RSA-PSS`. The SDK never generates or stores a
 private key.
@@ -238,10 +257,12 @@ token never appears in `ToString()`, a log, or telemetry.
 
 ## 8. Account, social and voice
 
-- `client.Me`: profile read and partial update, terms acceptance, avatar upload and download, public
-  profiles and avatars, linked identities, privacy settings, presence heartbeat (with a helper that
-  pauses on suspension and sends immediately on resume), public-key listing, registration and
-  revocation, and entitlements.
+- `client.Me`: profile read and partial update, the terms in force (anonymous, with the hash to
+  accept) and terms acceptance, avatar upload and download, public profiles and avatars, linked
+  identities, privacy settings, presence heartbeat (with a helper that pauses on suspension and sends
+  immediately on resume), public-key listing, registration and revocation - including
+  `RevokeCurrentPublicKeyAsync`, which a key-authenticated session uses to drop its own key and every
+  session it produced - and entitlements.
 - `client.Friends`: send, list, accept and decline requests; remove a friend; list friends with the
   presence the viewer is permitted to see.
 - `client.Chat`: direct and group conversations, rename, invitations, joinable rooms, join, add and
@@ -252,7 +273,8 @@ token never appears in `ToString()`, a log, or telemetry.
   `UnknownEventReceived` fallback that preserves any frame a later deployment adds.
   `StarhermitMessageDeduplicator` matches socket and REST deliveries by the server's message id; the
   SDK never invents an id or an optimistic timestamp.
-- `client.Voice`: create, list, read, join, leave, mute and close voice rooms.
+- `client.Voice`: create, list, read, join, leave, mute and close voice rooms, and the host's server
+  mute of another participant, which that participant cannot lift.
 - `StarhermitVoiceConnection`: binary audio frames stamped by the platform with a 16-byte sender id,
   `mute`, `speaking` and `rtc` control frames, and a PCM helper for the platform's fallback convention
   (20 ms, 16 kHz, mono, signed 16-bit). Muting changes server state, not local playback volume.
@@ -270,9 +292,21 @@ token never appears in `ToString()`, a log, or telemetry.
 - `client.Ratings` and `client.Wishlist`: upsert a rating with an optional review, bulk-query
   aggregates by game key, page reviews; idempotent wishlist add and remove.
 - `client.CloudSaves`: metadata, download, upload, and file-based overloads. `TryDownloadAsync` reports
-  absence as `null` rather than an error. `StarhermitCloudSaveSynchronizer` compares server metadata
-  with a caller-owned sync marker and, when both sides changed, reports a conflict instead of picking
-  a winner; `LocalWins`, `RemoteWins` and `Abort` are explicit policies.
+  absence as `null` rather than an error. Every stored save has a version (`ETag`), which
+  `DownloadVersionAsync` returns from the same response as the bytes. An upload is unconditional
+  unless it passes a `StarhermitSaveCondition` - `IfMatch(etag)`, `IfNoSaveExists`
+  (`If-None-Match: *`), `IfAnySaveExists`, or `ForVersion(info)` - and a write that loses to another
+  device throws `StarhermitPreconditionFailedException` instead of overwriting it. The account's
+  size, slot and total limits surface as `StarhermitQuotaExceededException` (`413`/`507`) or
+  `StarhermitConflictException` (`409`, slots), each naming the limit in force.
+- `StarhermitCloudSaveSynchronizer` compares server metadata with a caller-owned sync marker and, when
+  both sides changed, reports a conflict instead of picking a winner; `LocalWins`, `RemoteWins` and
+  `Abort` are explicit policies. Every upload it makes names the version it compared against (or
+  `If-None-Match: *` when there was none), so a write from another device in between is reported as
+  `Conflict` with the server's current metadata - under `LocalWins` too, since that decision was about
+  a version that no longer exists. A download is reported only with the metadata of the bytes it
+  returns: when a write lands between the download and the metadata read, it reads again (three
+  attempts) rather than hand back a marker for a save the device never saw.
 - `client.Achievements` and `client.Leaderboards`: unlocks, client-claimable unlock, definitions,
   paged entries with server-assigned ranks, and score submission where the definition permits it.
 
@@ -283,12 +317,23 @@ read-only through the games API.
 ## 10. Authoritative games
 
 `client.Games.ForSlug(slug)` returns a client covering game metadata and effective capabilities,
-launch-token minting, session listing and reads, AI sessions, nearest-rating matchmaking (enqueue,
-status, cancel), invites (create, list, accept, decline), cross-game invite inbox, replays (a game
-with replays disabled answers `404`, which is surfaced rather than flattened to an empty list),
-control bindings, and the schema-free player settings document (whole-document get, replace, merge and
-delete, plus single-key operations). Server budgets are reported from the response rather than
-duplicated as SDK policy.
+launch-token minting, session listing and reads, AI sessions, the game's match shapes
+(`GetQueuesAsync`) and nearest-rating matchmaking for all of them or a named subset (enqueue, status
+with how far the search has widened, cancel), invites (create, list, accept, decline), cross-game
+invite inbox, replays (a game with replays disabled answers `404`, which is surfaced rather than
+flattened to an empty list), control bindings, the schema-free player settings document
+(whole-document get, replace, merge and delete, plus single-key operations), the game's leaderboards,
+the caller's unlocks in another game (`GetLinkedAchievementsAsync`; a player who keeps achievements
+private reads as hidden, not as having none), a session's recovery description (checkpoint size and
+freshness, restore limits, transport budgets), leaving a persistent world, filing crash and bug reports
+with attachments (`FileReportAsync`; the per-game daily cap is a `429` with `Retry-After`, size caps a
+`413`) and reading the caller's own reports, and a connection ticket carrying the client's credential.
+Server budgets are reported from the response rather than duplicated as SDK policy.
+
+The same client carries the owner's tools that live on the game's route - `GetDiagnosticsAsync`
+(sessions, script cost, matchmaking, webhook backlog, buffered writes) and webhook endpoint list,
+create, delete and resume. Those always authenticate as the account, even from a launch-scoped client.
+A webhook's signing secret is returned once, on create, and is redacted from logs by name.
 
 `WithLaunchToken()` returns a client that authorises with the game-scoped launch token instead of the
 account session; the backend's scope fence, not the SDK, decides what it may call. Minting a launch
@@ -306,8 +351,13 @@ The token lives in the scoped credential store, never with the account session.
 ## 11. Realtime rooms and peer relay
 
 `client.RealtimeRooms`: create rooms with teams, seats, AI seats and backfill; read the caller's active
-room; list, accept and decline invites; quick-join; read a room; invite; open for backfill; start;
-leave; assign seats; submit results.
+room and every room they hold a seat in; browse listed rooms (`StarhermitRoomSummary`, which carries
+no join code or roster), optionally including running matches with a vacant seat; join by code; list,
+accept and decline invites; quick-join; read a room; invite; open for backfill; start; leave; assign
+seats; submit results; and, as host, rename, list or unlist, change metadata and backfill
+(`UpdateRoomAsync`, a compare-and-swap on the room's `Revision`) and put the roster into matchmaking as
+a party. A room's `JoinCode` is a capability - holding it takes a seat - and is redacted from logs by
+name.
 
 `StarhermitRealtimeConnection` attaches to `/ws/v1/realtime`, sends `chat`, `ready` and (host only)
 `event` control frames, and receives binary payloads prefixed with the sender's 16-byte participant id
@@ -320,9 +370,20 @@ the game's declaration and closes a connection that exceeds it.
 
 ## 12. Browser games and publishing
 
-`client.BrowserGames`: submit a repository, claim, list own and all, transfer, delete, icon and cover
-art, streamed bundle upload over HTTP, folder upload, audience stats, hosting toggle, deployment pin
-and read, and the GitHub link state.
+`client.BrowserGames`: submit a repository, claim, list own and all, transfer, delete, move to a
+different URL keeping the game's id (`ChangeUrlAsync`), list removed games and restore an uploaded
+one, icon and cover art, release notes, streamed bundle upload over HTTP, folder upload, audience
+stats, hosting toggle, deployment pin and read, and the GitHub link state. `StarhermitBrowserGame`
+reports `ServerRuntime` (`script`, `container`, or null for a browser-only game), which is the way to
+ask whether a game has a backend - every game whose author is known has a slug.
+
+For a game's owner it also covers: the server's live sessions and ending one; achievements and
+leaderboards beside the game's own (`Origin` tells an owner-created achievement from one the script
+declares, which only a redeploy changes; owner boards are filled by the game's server logic, never by a
+client); resetting one player's rating; player crash and bug reports (paged list filtered by kind and
+status, full report, attachment download, status change, delete); and the server container's output -
+recent logs (live, or the last crash's when nothing runs) and paged crash reports with each crash's
+final output.
 
 `client.Publishers`: create a publisher, list memberships, add, remove and read members, create or
 update titles, generate signed upload targets, finalise builds, download and launch analytics,
@@ -348,7 +409,8 @@ and records the offset on `client.ServerClock`, which exposes `ServerNow`, `Offs
 
 - HTTPS and WSS are required outside an explicitly declared development environment.
 - Redaction is structural, by header, query-parameter and JSON member name at every depth, so a
-  credential the SDK has never seen is still removed. URL fragments are dropped entirely.
+  credential the SDK has never seen is still removed - connection tickets, webhook secrets and room
+  join codes included. URL fragments are dropped entirely.
 - The package ships no store that claims to be secure. The default is in-memory;
   `EncryptedFileTokenStore` (AES-CBC with HMAC-SHA256 over an application-supplied key) is the opt-in
   fallback, documented as obfuscation at rest rather than a keychain. `PlayerPrefs` is never presented
@@ -392,11 +454,12 @@ codecs. There is no reflection anywhere in the runtime.
 
 ### 17.1 What runs today
 
-- **144 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
-  headers, credentials, response mapping, cancellation, typed errors, paging), retry eligibility and
-  jitter bounds, refresh coordination and rotation persistence, redaction, socket machinery
-  (ordering, backpressure, reconnection, policy closes, handler exceptions), all six wire protocols,
-  cloud-save conflict resolution, client lifecycle and model tolerance, and the coverage manifest.
+- **173 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
+  headers, credentials, response mapping, cancellation, typed errors and limit refusals, paging), retry
+  eligibility and jitter bounds, refresh coordination and rotation persistence, redaction, socket
+  machinery (ordering, backpressure, reconnection, policy closes, handler exceptions), all six wire
+  protocols, cloud-save conflict resolution and conditional writes, the player, owner and room
+  operations' wire shapes, client lifecycle and model tolerance, and the coverage manifest.
   They run under `dotnet test` and, unchanged, as Unity EditMode tests.
 - **Five live contract tests** that read a real deployment when `STARHERMIT_TEST_BASE_URL` is set, and
   are skipped otherwise. They confirm the SDK's parsing, model mapping, paging metadata, clock
@@ -407,9 +470,9 @@ codecs. There is no reflection anywhere in the runtime.
   eight samples - against small API stubs, on machines with no Unity licence.
 - **A generated coverage manifest**: `tools/generate_coverage.py` reads the backend's controllers and
   emits `contracts/coverage-manifest.json`, `Documentation~/api-coverage.md` and the data
-  `ContractCoverageTests` enforces. Of 192 API operations, 182 are mapped to typed SDK methods, 6 are
-  WebSocket routes served by connection classes, and 4 are classified as not-for-clients with reasons.
-  Zero are unmapped.
+  `ContractCoverageTests` enforces. Of 243 API operations, 227 are mapped to typed SDK methods, 6 are
+  WebSocket routes served by connection classes, and 10 are classified as not-for-clients with reasons
+  (browser-only pages, server-to-server callbacks, and the game host's nginx hooks). Zero are unmapped.
 - **`tools/verify.sh`** runs the whole gate: build every project with warnings as errors and XML
   documentation required, run the suite, regenerate the manifest and fail on any drift.
 
@@ -424,6 +487,10 @@ qualified support, and no platform should be advertised as verified.
 
 - The optional WebRTC voice adapter. The PCM fallback path is implemented; a WebRTC adapter would slot
   in behind the same interfaces.
+- Socket handshakes still carry `?access_token=` when a header is unavailable; switching them to
+  connection tickets, with a fallback for a deployment that predates tickets, is not done.
+- Creating a room and quick-joining do not yet take a name, visibility, backfill cap,
+  join-in-progress or quick-join filters; `UpdateRoomAsync` sets the first four after creation.
 - The authenticated half of the live contract suite. Exercising it needs a real session, and the
   tests deliberately will not mint one from a signing secret - a test that forges credentials stops
   testing the thing it claims to test. Wiring it to a seeded test account on an ephemeral backend is

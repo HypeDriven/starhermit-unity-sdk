@@ -248,6 +248,27 @@ namespace Starhermit
         public static StarhermitTermsAcceptance Read(JsonValue json) => new StarhermitTermsAcceptance(json);
     }
 
+    /// <summary>The terms of service in force, exactly as the platform enforces them.</summary>
+    public sealed class StarhermitTermsDocument : StarhermitModel
+    {
+        private StarhermitTermsDocument(JsonValue json) : base(json)
+        {
+            Hash = json["hash"].AsStringOrNull() ?? string.Empty;
+            Text = json["text"].AsStringOrNull() ?? string.Empty;
+        }
+
+        /// <summary>The SHA-256 to pass to <see cref="StarhermitProfileClient.AcceptTermsAsync"/> once the player has read <see cref="Text"/>.</summary>
+        public string Hash { get; }
+
+        /// <summary>The terms, byte for byte. Show this text rather than a copy shipped with the game.</summary>
+        public string Text { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitTermsDocument Read(JsonValue json) => new StarhermitTermsDocument(json);
+    }
+
     /// <summary>An entitlement granting the account access to a catalog title.</summary>
     public sealed class StarhermitEntitlement : StarhermitModel
     {

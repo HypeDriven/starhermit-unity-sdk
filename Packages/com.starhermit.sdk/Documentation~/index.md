@@ -77,8 +77,29 @@ A non-success response throws a typed `StarhermitApiException`:
 | 403 | `StarhermitAuthorizationException` |
 | 404 | `StarhermitNotFoundException` |
 | 409 | `StarhermitConflictException` |
+| 412 | `StarhermitPreconditionFailedException` (carries `CurrentETag`) |
+| 413, 507 | `StarhermitQuotaExceededException` |
 | 429 | `StarhermitRateLimitException` (carries `RetryAfter`) |
-| 5xx | `StarhermitServerException` |
+| other 5xx | `StarhermitServerException` |
+
+Limits are set per account and per game by the platform's operators, so never hard-code one. A refusal
+over a limit carries the number in force:
+
+```csharp
+try
+{
+    await client.CloudSaves.UploadAsync("chess", archive, StarhermitSaveCondition.ForVersion(info));
+}
+catch (StarhermitPreconditionFailedException)
+{
+    // Another device saved since `info` was read: load that version and let the player choose.
+}
+catch (StarhermitApiException e) when (e.Limit.HasValue)
+{
+    // e.ErrorCode is cloud_save_too_large, cloud_save_slots_exhausted or cloud_save_quota_exceeded;
+    // e.Limit (and, for the total, e.Used) are this account's numbers.
+}
+```
 
 A request that never reached the API throws `StarhermitTransportException` (or
 `StarhermitTimeoutException`) instead - never a fake API error. Cancellation always surfaces as
@@ -88,8 +109,8 @@ A request that never reached the API throws `StarhermitTransportException` (or
 ## Retries and refresh
 
 Retries are bounded, jittered, and limited to failures a second attempt could survive: connection
-errors, timeouts, `408`, `429`, and transient `5xx`. `403`, `404`, `409` and validation failures are
-never retried. A POST is not retried unless the endpoint documents an idempotency guarantee or you
+errors, timeouts, `408`, `429`, and transient `5xx`. `403`, `404`, `409`, `412`, `413`, `507` and
+validation failures are never retried. A POST is not retried unless the endpoint documents an idempotency guarantee or you
 supply a key with `AsIdempotent`.
 
 A `401` triggers at most one coordinated refresh and one replay. Concurrent callers join the same

@@ -179,9 +179,9 @@ namespace Starhermit
                             RequestId = requestId,
                             Headers = RedactHeaders(response.Headers)
                         };
-                        unauthorized.ReadBody(StarhermitRedactor.RedactBody(
-                            response.Body == null ? null : Encoding.UTF8.GetString(response.Body),
-                            _options.MaxDiagnosticBodyCharacters));
+                        var unauthorizedBody = response.Body == null ? null : Encoding.UTF8.GetString(response.Body);
+                        unauthorized.ReadBody(StarhermitRedactor.RedactBody(unauthorizedBody, _options.MaxDiagnosticBodyCharacters));
+                        unauthorized.ReadErrorCode(unauthorizedBody);
                         response.Dispose();
 
                         refreshed = true;
@@ -233,6 +233,7 @@ namespace Starhermit
                         Headers = RedactHeaders(headers)
                     };
                     error.ReadBody(StarhermitRedactor.RedactBody(body, _options.MaxDiagnosticBodyCharacters));
+                    error.ReadErrorCode(body);
 
                     var exceptionToThrow = StarhermitApiException.Create(error);
                     Volatile.Write(ref _lastError, $"{operationId}: {exceptionToThrow.Message}");

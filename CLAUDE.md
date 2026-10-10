@@ -9,9 +9,9 @@ typed, asynchronous access to the Starhermit REST v1 and WebSocket v1 APIs — t
 `../starhermit`. It targets every Unity build target: desktop, mobile, WebGL, console, XR, embedded and
 headless server.
 
-The package is implemented and verified: 182 of the API's 192 operations are mapped to typed methods
-(4 more are classified as not-for-clients, 6 are the WebSocket routes), all six socket protocols have
-connection classes, and 134 tests run green. `spec.md` describes what it does; this file describes how
+The package is implemented and verified: 227 of the API's 243 operations are mapped to typed methods
+(10 more are classified as not-for-clients, 6 are the WebSocket routes), all six socket protocols have
+connection classes, and 178 tests run green (5 of them skip unless a live deployment is named). `spec.md` describes what it does; this file describes how
 to work on it.
 
 This is one of the agent-generated projects under the parent dashboard pipeline. The parent
@@ -51,7 +51,7 @@ For contract work against a live backend: `cd ../starhermit && docker compose up
 `StarhermitRestClient` (`Runtime/Core/Http/`) owns credential selection, the single coordinated
 refresh, retry eligibility, error typing, redaction and telemetry. Every typed client derives from
 `StarhermitServiceClient` and does nothing but describe an endpoint — path, verb, query, body, and how
-to read the result. **Never make one of those decisions inside a service client**: 182 operations
+to read the result. **Never make one of those decisions inside a service client**: 227 operations
 agreeing about what a 401 means is the entire point of the split.
 
 Adding an operation: add the method to its client with an `"area.operation"` id, then run
@@ -99,6 +99,15 @@ Public-key challenges must be signed over the server's **PascalCase** serialisat
 payload, not the camel-cased JSON the client receives (`StarhermitChallenge.CanonicalPayload`). That
 and four other findings are written up in `contracts/backend-notes.md` for the platform team; the
 deployed contract stays authoritative until they change it.
+
+### An error body is redacted before it is read
+
+`code` is on the redactor's JSON list because OAuth authorization codes travel under that name, and
+`StarhermitErrorInfo.ReadBody` only ever sees the redacted body - so the API's own error codes
+(`rate_limited`, `cloud_save_quota_exceeded`, ...) are read back from the raw body by `ReadErrorCode`,
+and only when they have the snake_case shape every API error code has. Widen that shape and a token can
+reach `ErrorCode`; drop the call and every code reads as `***`, which is what it did until limit
+refusals needed one.
 
 ## Invariants
 

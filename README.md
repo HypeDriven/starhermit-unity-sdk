@@ -4,14 +4,14 @@ Typed, asynchronous Unity client for the Starhermit platform: authentication, pr
 voice, catalog, entitlements, cloud saves, achievements, leaderboards, authoritative games, realtime
 rooms, peer relay and publishing.
 
-Every public operation of the deployed REST API v1 is mapped to a typed method, and all six WebSocket
+Every public operation of REST API v1 - player, game-owner and publisher alike - is mapped to a typed method, and all six WebSocket
 protocols have a connection class. Coverage is checked by a test, not by hand:
 
 | | |
 | --- | --- |
-| API operations | 192 |
-| Mapped to typed SDK methods | 182 |
-| Classified as not-for-clients (reachable through `Raw`) | 4 |
+| API operations | 243 |
+| Mapped to typed SDK methods | 227 |
+| Classified as not-for-clients (reachable through `Raw`) | 10 |
 | Unmapped | 0 |
 | WebSocket protocols | 6 |
 
@@ -53,7 +53,9 @@ Eight samples ship with the package, from sign-in to a dedicated server: see `Sa
 - **Credentials are separate types.** Account session, game-scoped launch token and dedicated-server
   token live in different stores with different lifetimes. None can stand in for another.
 - **The server is the authority.** The SDK never recomputes an entitlement, a rank, a score or a
-  membership, and surfaces server-published limits instead of copies that were true at release.
+  membership, and surfaces server-published limits instead of copies that were true at release: a
+  refusal over a per-account or per-game limit carries the number in force (`Limit`, `Used`,
+  `ErrorCode`), and a cloud save can be written only over the version the game last read.
 - **Failures are classified.** Retries are bounded, jittered and limited to failures a second attempt
   could survive. A `401` buys exactly one coordinated refresh and one replay. A transport failure is
   never dressed up as an API response.
@@ -78,7 +80,7 @@ against small API stubs, so that half of the package is type-checked in CI too.
 The suite runs on NUnit, which is also Unity Test Framework's engine: the same files under
 `Tests/Runtime` execute as EditMode tests inside the editor.
 
-Five of the 149 tests read a real deployment instead of a fixture, so a contract drift on the server shows
+Five of the 178 tests read a real deployment instead of a fixture, so a contract drift on the server shows
 up here rather than in a player's bug report. They are skipped unless you point them at one:
 
 ```bash

@@ -37,6 +37,15 @@ namespace Starhermit
             return SendAsync(WithBody(Patch("me"), update.Write), "me.updateProfile", cancellationToken);
         }
 
+        /// <summary>
+        /// Reads the terms of service in force and their hash. Needs no session, so a sign-up screen
+        /// can show them first.
+        /// </summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The terms.</returns>
+        public Task<StarhermitTermsDocument> GetTermsAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(Get("terms").WithCredential(StarhermitCredential.None), "terms.get", StarhermitTermsDocument.Read, cancellationToken);
+
         /// <summary>Records acceptance of a terms version.</summary>
         /// <param name="termsHash">Hash identifying the accepted terms, at most 64 characters.</param>
         /// <param name="cancellationToken">Cancels the request.</param>
@@ -209,6 +218,25 @@ namespace Starhermit
             SendAsync(
                 Delete($"me/public-keys/{Escape(keyId)}"),
                 "me.revokePublicKey",
+                StarhermitKeyRevocation.Read,
+                cancellationToken);
+
+        /// <summary>
+        /// Revokes the key this session signed in with, ending every session it produced - the way
+        /// for a device holding a key to sign itself out for good.
+        /// </summary>
+        /// <remarks>
+        /// Allowed for the key's own session, which needs no OAuth session to drop its own credential.
+        /// The session is dead on the server afterwards; call <see cref="StarhermitAuthClient.SignOutAsync"/>
+        /// to clear it locally.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>What was revoked.</returns>
+        /// <exception cref="StarhermitConflictException">This session did not sign in with a public key (<c>no_public_key_session</c>).</exception>
+        public Task<StarhermitKeyRevocation> RevokeCurrentPublicKeyAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Delete("me/public-keys/current"),
+                "me.revokeCurrentPublicKey",
                 StarhermitKeyRevocation.Read,
                 cancellationToken);
 

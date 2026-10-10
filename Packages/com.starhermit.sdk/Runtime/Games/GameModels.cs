@@ -121,7 +121,14 @@ namespace Starhermit
             FinishedAt = json["finishedAt"].AsDateTimeOffsetOrNull();
             IsMyTurn = json["myTurn"].AsBooleanOrNull();
             DeadlineUnixMilliseconds = json["deadline"].AsInt64OrNull();
+            PausedAt = json["pausedAt"].AsDateTimeOffsetOrNull();
         }
+
+        /// <summary>
+        /// When a persistent session was paused because everyone left; null while it runs. Joining
+        /// resumes it.
+        /// </summary>
+        public DateTimeOffset? PausedAt { get; }
 
         /// <summary>Session id.</summary>
         public Guid SessionId { get; }
@@ -208,7 +215,19 @@ namespace Starhermit
             TicketId = json["ticketId"].AsGuidOrNull() ?? Guid.Empty;
             Status = json["status"].AsStringOrNull() ?? string.Empty;
             SessionId = json["sessionId"].AsGuidOrNull();
+            WaitedSeconds = json["waitedSeconds"].AsInt32OrDefault();
+            SearchEloBand = json["searchEloBand"].AsDecimalOrNull() ?? 0;
+            MaxWaitSeconds = json["maxWaitSeconds"].AsInt32OrDefault();
         }
+
+        /// <summary>How long the ticket has been searching.</summary>
+        public int WaitedSeconds { get; }
+
+        /// <summary>How far either side of the player's rating the search has widened - what a client shows as "expanding".</summary>
+        public decimal SearchEloBand { get; }
+
+        /// <summary>How long a search may wait before it expires.</summary>
+        public int MaxWaitSeconds { get; }
 
         /// <summary>Ticket id.</summary>
         public Guid TicketId { get; }
@@ -596,6 +615,588 @@ namespace Starhermit
         public static StarhermitGameSetting Read(JsonValue json) => new StarhermitGameSetting(json);
     }
 
+    /// <summary>One shape of match a game accepts, from <c>game.queues</c> or the implicit 1v1.</summary>
+    public sealed class StarhermitGameQueue : StarhermitModel
+    {
+        private StarhermitGameQueue(JsonValue json) : base(json)
+        {
+            Key = json["key"].AsStringOrNull() ?? string.Empty;
+            Teams = json["teams"].AsInt32OrDefault();
+            TeamSize = json["teamSize"].AsInt32OrDefault();
+            Players = json["players"].AsInt32OrDefault();
+        }
+
+        /// <summary>The key to name when entering matchmaking for this shape.</summary>
+        public string Key { get; }
+
+        /// <summary>How many teams a match of this shape has.</summary>
+        public int Teams { get; }
+
+        /// <summary>Players per team. A party fills exactly one team, so a party larger than this cannot queue for it.</summary>
+        public int TeamSize { get; }
+
+        /// <summary>Players in the whole match.</summary>
+        public int Players { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitGameQueue Read(JsonValue json) => new StarhermitGameQueue(json);
+    }
+
+    /// <summary>What the caller has unlocked in another game.</summary>
+    /// <remarks>
+    /// For opening features earned elsewhere - a sequel honouring the original. A client can lie about
+    /// what it read, so anything the platform must enforce belongs in the game's server logic, which
+    /// receives the same data as <c>ctx.linkedAchievements</c>.
+    /// </remarks>
+    public sealed class StarhermitLinkedAchievements : StarhermitModel
+    {
+        private StarhermitLinkedAchievements(JsonValue json) : base(json)
+        {
+            Game = json["game"].AsStringOrNull() ?? string.Empty;
+            IsHidden = json["hidden"].AsBooleanOrDefault();
+            Unlocked = json["unlocked"].AsList(StarhermitLinkedAchievement.Read);
+        }
+
+        /// <summary>The other game's slug.</summary>
+        public string Game { get; }
+
+        /// <summary>
+        /// True when the player keeps their achievements private. <see cref="Unlocked"/> is then empty
+        /// and says nothing about what they have - treat it as unknown, not as none.
+        /// </summary>
+        public bool IsHidden { get; }
+
+        /// <summary>The other game's achievements the player holds.</summary>
+        public IReadOnlyList<StarhermitLinkedAchievement> Unlocked { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitLinkedAchievements Read(JsonValue json) => new StarhermitLinkedAchievements(json);
+    }
+
+    /// <summary>One achievement unlocked in another game.</summary>
+    public sealed class StarhermitLinkedAchievement : StarhermitModel
+    {
+        private StarhermitLinkedAchievement(JsonValue json) : base(json)
+        {
+            Key = json["key"].AsStringOrNull() ?? string.Empty;
+            UnlockedAt = json["unlockedAt"].AsDateTimeOffsetOrNull();
+        }
+
+        /// <summary>The achievement's key in the other game.</summary>
+        public string Key { get; }
+
+        /// <summary>When it was unlocked.</summary>
+        public DateTimeOffset? UnlockedAt { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitLinkedAchievement Read(JsonValue json) => new StarhermitLinkedAchievement(json);
+    }
+
+    /// <summary>
+    /// What it would take to bring a session back, measured: the checkpoint the platform holds against
+    /// its budget, how fresh it is, the limits a restore is judged by, and the transport budgets the
+    /// session plays under. Container-only members are null for a script game, whose state is written
+    /// on every change rather than checkpointed.
+    /// </summary>
+    public sealed class StarhermitSessionRecovery : StarhermitModel
+    {
+        private StarhermitSessionRecovery(JsonValue json) : base(json)
+        {
+            SessionId = json["sessionId"].AsGuidOrNull() ?? Guid.Empty;
+            Status = json["status"].AsStringOrNull() ?? string.Empty;
+            Runtime = json["runtime"].AsStringOrNull() ?? string.Empty;
+            IsPersistent = json["persistent"].AsBooleanOrDefault();
+            PausedAt = json["pausedAt"].AsDateTimeOffsetOrNull();
+            PausedMilliseconds = json["pausedMillis"].AsInt64OrDefault();
+            SnapshotBytes = json["snapshotBytes"].AsInt64OrDefault();
+            StateBudgetBytes = json["stateBudgetBytes"].AsInt64OrDefault();
+            LastSnapshotAt = json["lastSnapshotAt"].AsDateTimeOffsetOrNull();
+            SnapshotIntervalSeconds = json["snapshotIntervalSeconds"].AsDoubleOrNull();
+            MaxSnapshotPushHz = json["maxSnapshotPushHz"].AsDoubleOrNull();
+            MaxRestoreStalenessSeconds = json["maxRestoreStalenessSeconds"].AsInt32OrNull();
+            MaxRestores = json["maxRestores"].AsInt32OrDefault();
+            RestoreWindowMinutes = json["restoreWindowMinutes"].AsInt32OrDefault();
+            RestoreCount = json["restoreCount"].AsInt32OrDefault();
+            RetentionDays = json["retentionDays"].AsInt32OrDefault();
+            RecoveryDataExpiresAt = json["recoveryDataExpiresAt"].AsDateTimeOffsetOrNull();
+            Transport = json["transport"].IsObject ? StarhermitTransportBudget.Read(json["transport"]) : null;
+        }
+
+        /// <summary>Session id.</summary>
+        public Guid SessionId { get; }
+
+        /// <summary>Session status - see <see cref="StarhermitSessionStatuses"/>.</summary>
+        public string Status { get; }
+
+        /// <summary>The runtime hosting it: <c>script</c> or <c>container</c>.</summary>
+        public string Runtime { get; }
+
+        /// <summary>True for a persistent world, which is paused rather than ended when it empties.</summary>
+        public bool IsPersistent { get; }
+
+        /// <summary>When the session was paused, while it is.</summary>
+        public DateTimeOffset? PausedAt { get; }
+
+        /// <summary>Total time the session has spent paused.</summary>
+        public long PausedMilliseconds { get; }
+
+        /// <summary>Size of the checkpoint the platform holds.</summary>
+        public long SnapshotBytes { get; }
+
+        /// <summary>The budget that checkpoint must fit.</summary>
+        public long StateBudgetBytes { get; }
+
+        /// <summary>When the checkpoint was taken.</summary>
+        public DateTimeOffset? LastSnapshotAt { get; }
+
+        /// <summary>How often the platform checkpoints a container session; null for a script game.</summary>
+        public double? SnapshotIntervalSeconds { get; }
+
+        /// <summary>Most snapshots per second a container may push; null for a script game.</summary>
+        public double? MaxSnapshotPushHz { get; }
+
+        /// <summary>Oldest checkpoint a crash may be restored from; null for a script game.</summary>
+        public int? MaxRestoreStalenessSeconds { get; }
+
+        /// <summary>Most restores allowed within <see cref="RestoreWindowMinutes"/>.</summary>
+        public int MaxRestores { get; }
+
+        /// <summary>The window restores are counted over.</summary>
+        public int RestoreWindowMinutes { get; }
+
+        /// <summary>Restores so far within the window.</summary>
+        public int RestoreCount { get; }
+
+        /// <summary>How long a finished session's recovery data is kept.</summary>
+        public int RetentionDays { get; }
+
+        /// <summary>When this session's recovery data will be deleted, once it has finished.</summary>
+        public DateTimeOffset? RecoveryDataExpiresAt { get; }
+
+        /// <summary>Per-connection limits on the game socket and the rates the session runs at.</summary>
+        public StarhermitTransportBudget? Transport { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitSessionRecovery Read(JsonValue json) => new StarhermitSessionRecovery(json);
+    }
+
+    /// <summary>The game socket's per-connection limits, and the rates a session runs at.</summary>
+    public sealed class StarhermitTransportBudget : StarhermitModel
+    {
+        private StarhermitTransportBudget(JsonValue json) : base(json)
+        {
+            MaxMessageBytes = json["maxMessageBytes"].AsInt32OrDefault();
+            MaxRealtimeInputsPerSecond = json["maxRealtimeInputsPerSecond"].AsInt32OrDefault();
+            TickRateHz = json["tickRateHz"].AsDoubleOrNull() ?? 0;
+            PacingRateHz = json["pacingRateHz"].AsDoubleOrNull() ?? 0;
+        }
+
+        /// <summary>Largest frame the socket accepts.</summary>
+        public int MaxMessageBytes { get; }
+
+        /// <summary>Most realtime inputs a player may send per second.</summary>
+        public int MaxRealtimeInputsPerSecond { get; }
+
+        /// <summary>The rate the platform ticks the session at; 0 means never.</summary>
+        public double TickRateHz { get; }
+
+        /// <summary>The rate per-sender message budgets are sized from.</summary>
+        public double PacingRateHz { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitTransportBudget Read(JsonValue json) => new StarhermitTransportBudget(json);
+    }
+
+    /// <summary>A crash or bug report a player files for a game.</summary>
+    /// <remarks>
+    /// Every axis is bounded by limits the platform's operators set per game - reports per player per
+    /// day (<c>429</c> with <c>Retry-After</c>), description length, attachment count and total bytes
+    /// (<c>413</c>). Attachments are for logs and screenshots the player chose to send; never attach
+    /// tokens, keys or anything the player did not see.
+    /// </remarks>
+    public sealed class StarhermitPlayerReport
+    {
+        private readonly List<StarhermitReportAttachment> _attachments = new List<StarhermitReportAttachment>();
+
+        /// <summary>Creates a report.</summary>
+        /// <param name="kind">See <see cref="StarhermitReportKinds"/>.</param>
+        /// <param name="title">One line saying what went wrong, at most 200 characters.</param>
+        public StarhermitPlayerReport(string kind, string title)
+        {
+            Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+            Title = title ?? throw new ArgumentNullException(nameof(title));
+        }
+
+        /// <summary>See <see cref="StarhermitReportKinds"/>.</summary>
+        public string Kind { get; }
+
+        /// <summary>One line saying what went wrong.</summary>
+        public string Title { get; }
+
+        /// <summary>What the player was doing and what happened.</summary>
+        public string? Description { get; set; }
+
+        /// <summary>The game client's version.</summary>
+        public string? ClientVersion { get; set; }
+
+        /// <summary>The platform the game was running on.</summary>
+        public string? Platform { get; set; }
+
+        /// <summary>The browser's user agent, for a browser game.</summary>
+        public string? UserAgent { get; set; }
+
+        /// <summary>The build the player was running, as the game info's build id reported it.</summary>
+        public string? BuildId { get; set; }
+
+        /// <summary>The session the problem happened in, when there was one.</summary>
+        public Guid? SessionId { get; set; }
+
+        /// <summary>Files attached so far.</summary>
+        public IReadOnlyList<StarhermitReportAttachment> Attachments => _attachments;
+
+        /// <summary>Attaches a file.</summary>
+        /// <param name="fileName">Name shown to the game's owner.</param>
+        /// <param name="contentType">Media type, e.g. <c>text/plain</c> or <c>image/png</c>.</param>
+        /// <param name="data">The file's bytes.</param>
+        /// <returns>This report, for chaining.</returns>
+        public StarhermitPlayerReport Attach(string fileName, string contentType, byte[] data)
+        {
+            _attachments.Add(new StarhermitReportAttachment(fileName, contentType, data));
+            return this;
+        }
+
+        /// <summary>Writes the report as the API's request body.</summary>
+        /// <param name="writer">Writer positioned inside the request object.</param>
+        public void Write(JsonWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            writer.Write("kind", Kind);
+            writer.Write("title", Title);
+            writer.WriteIfPresent("description", Description);
+            writer.WriteIfPresent("clientVersion", ClientVersion);
+            writer.WriteIfPresent("platform", Platform);
+            writer.WriteIfPresent("userAgent", UserAgent);
+            writer.WriteIfPresent("buildId", BuildId);
+            writer.WriteIfPresent("sessionId", SessionId);
+            if (_attachments.Count == 0) return;
+            writer.WriteArray("attachments", _attachments, (w, attachment) =>
+            {
+                w.WriteStartObject();
+                w.Write("fileName", attachment.FileName);
+                w.Write("contentType", attachment.ContentType);
+                w.Write("dataBase64", Convert.ToBase64String(attachment.Data));
+                w.WriteEndObject();
+            });
+        }
+    }
+
+    /// <summary>A file attached to a player report.</summary>
+    public sealed class StarhermitReportAttachment
+    {
+        /// <summary>Creates an attachment.</summary>
+        /// <param name="fileName">Name shown to the game's owner.</param>
+        /// <param name="contentType">Media type.</param>
+        /// <param name="data">The file's bytes.</param>
+        public StarhermitReportAttachment(string fileName, string contentType, byte[] data)
+        {
+            FileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
+            ContentType = contentType ?? throw new ArgumentNullException(nameof(contentType));
+            Data = data ?? throw new ArgumentNullException(nameof(data));
+        }
+
+        /// <summary>Name shown to the game's owner.</summary>
+        public string FileName { get; }
+
+        /// <summary>Media type.</summary>
+        public string ContentType { get; }
+
+        /// <summary>The file's bytes.</summary>
+        public byte[] Data { get; }
+    }
+
+    /// <summary>The platform's receipt for a filed report.</summary>
+    public sealed class StarhermitReportReceipt : StarhermitModel
+    {
+        private StarhermitReportReceipt(JsonValue json) : base(json)
+        {
+            Id = json["id"].AsGuidOrNull() ?? Guid.Empty;
+            Kind = json["kind"].AsStringOrNull() ?? string.Empty;
+            Status = json["status"].AsStringOrNull() ?? string.Empty;
+            CreatedAt = json["createdAt"].AsDateTimeOffsetOrNull();
+        }
+
+        /// <summary>Report id - quote it to the game's developer.</summary>
+        public Guid Id { get; }
+
+        /// <summary>See <see cref="StarhermitReportKinds"/>.</summary>
+        public string Kind { get; }
+
+        /// <summary>See <see cref="StarhermitReportStatuses"/>.</summary>
+        public string Status { get; }
+
+        /// <summary>When it was filed.</summary>
+        public DateTimeOffset? CreatedAt { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitReportReceipt Read(JsonValue json) => new StarhermitReportReceipt(json);
+    }
+
+    /// <summary>One of the caller's own reports, and how far the developer has got with it.</summary>
+    public sealed class StarhermitMyReport : StarhermitModel
+    {
+        private StarhermitMyReport(JsonValue json) : base(json)
+        {
+            Id = json["id"].AsGuidOrNull() ?? Guid.Empty;
+            Kind = json["kind"].AsStringOrNull() ?? string.Empty;
+            Status = json["status"].AsStringOrNull() ?? string.Empty;
+            Title = json["title"].AsStringOrNull() ?? string.Empty;
+            CreatedAt = json["createdAt"].AsDateTimeOffsetOrNull();
+            UpdatedAt = json["updatedAt"].AsDateTimeOffsetOrNull();
+        }
+
+        /// <summary>Report id.</summary>
+        public Guid Id { get; }
+
+        /// <summary>See <see cref="StarhermitReportKinds"/>.</summary>
+        public string Kind { get; }
+
+        /// <summary>See <see cref="StarhermitReportStatuses"/>.</summary>
+        public string Status { get; }
+
+        /// <summary>The title it was filed with.</summary>
+        public string Title { get; }
+
+        /// <summary>When it was filed.</summary>
+        public DateTimeOffset? CreatedAt { get; }
+
+        /// <summary>When its status last changed.</summary>
+        public DateTimeOffset? UpdatedAt { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitMyReport Read(JsonValue json) => new StarhermitMyReport(json);
+    }
+
+    /// <summary>Kinds of player report.</summary>
+    public static class StarhermitReportKinds
+    {
+        /// <summary>The game crashed.</summary>
+        public const string Crash = "crash";
+
+        /// <summary>The game misbehaved.</summary>
+        public const string Bug = "bug";
+    }
+
+    /// <summary>Where a player report stands, as the game's owner sets it.</summary>
+    public static class StarhermitReportStatuses
+    {
+        /// <summary>Not yet looked at.</summary>
+        public const string Open = "open";
+
+        /// <summary>Seen by the developer.</summary>
+        public const string Acknowledged = "acknowledged";
+
+        /// <summary>Dealt with.</summary>
+        public const string Resolved = "resolved";
+    }
+
+    /// <summary>What a game's owner can see about the game while it runs.</summary>
+    public sealed class StarhermitGameDiagnostics : StarhermitModel
+    {
+        private StarhermitGameDiagnostics(JsonValue json) : base(json)
+        {
+            Slug = json["slug"].AsStringOrNull() ?? string.Empty;
+            Runtime = json["runtime"].AsStringOrNull() ?? string.Empty;
+            IsEnabled = json["enabled"].AsBooleanOrDefault();
+            TickRateHz = json["tickRateHz"].AsDoubleOrNull() ?? 0;
+            var sessions = json["sessions"];
+            ActiveSessions = sessions["active"].AsInt32OrDefault();
+            FinishedSessions = sessions["finished"].AsInt32OrDefault();
+            LiveConnections = sessions["liveConnections"].AsInt32OrDefault();
+            SessionsWithLiveConnection = sessions["withLiveConnection"].AsInt32OrDefault();
+            OldestActiveSince = sessions["oldestActiveSince"].AsDateTimeOffsetOrNull();
+            var script = json["script"];
+            ScriptInvocations = script["invocations"].AsInt64OrDefault();
+            ScriptAverageMilliseconds = script["averageMillis"].AsDoubleOrNull() ?? 0;
+            ScriptPeakMilliseconds = script["peakMillis"].AsInt32OrDefault();
+            ScriptLastInvokedAt = script["lastInvokedAt"].AsDateTimeOffsetOrNull();
+            ScriptCpuMillisecondsBudget = script["cpuMillisBudget"].AsInt32OrDefault();
+            ScriptMemoryBudgetBytes = script["memoryBudgetBytes"].AsInt64OrDefault();
+            ScriptMaxStatements = script["maxStatements"].AsInt64OrDefault();
+            var matchmaking = json["matchmaking"];
+            MatchmakingQueued = matchmaking["queued"].AsInt32OrDefault();
+            MatchmakingWaitingLongestSeconds = matchmaking["waitingLongestSeconds"].AsInt32OrDefault();
+            MatchmakingWidestSearchBand = matchmaking["widestSearchBand"].AsDecimalOrNull() ?? 0;
+            MatchmakingMaxWaitSeconds = matchmaking["maxWaitSeconds"].AsInt32OrDefault();
+            var webhooks = json["webhooks"];
+            WebhookEndpoints = webhooks["endpoints"].AsInt32OrDefault();
+            DisabledWebhookEndpoints = webhooks["disabledEndpoints"].AsInt32OrDefault();
+            PendingWebhookDeliveries = webhooks["pending"].AsInt32OrDefault();
+            DeadWebhookDeliveries = webhooks["dead"].AsInt32OrDefault();
+            var buffer = json["writeBuffer"];
+            WriteBufferEnabled = buffer["enabled"].AsBooleanOrDefault();
+            WriteBufferPendingSessions = buffer["pendingSessions"].AsInt32OrDefault();
+            WriteBufferPendingBytes = buffer["pendingBytes"].AsInt64OrDefault();
+            WriteBufferMaxPendingBytes = buffer["maxPendingBytes"].AsInt64OrDefault();
+            ObservedAt = json["observedAt"].AsDateTimeOffsetOrNull();
+        }
+
+        /// <summary>The game's slug.</summary>
+        public string Slug { get; }
+
+        /// <summary>The runtime hosting its logic: <c>script</c> or <c>container</c>.</summary>
+        public string Runtime { get; }
+
+        /// <summary>True when the game is enabled.</summary>
+        public bool IsEnabled { get; }
+
+        /// <summary>The rate the platform ticks it at.</summary>
+        public double TickRateHz { get; }
+
+        /// <summary>Sessions in progress.</summary>
+        public int ActiveSessions { get; }
+
+        /// <summary>Sessions that have finished.</summary>
+        public int FinishedSessions { get; }
+
+        /// <summary>Game sockets open now.</summary>
+        public int LiveConnections { get; }
+
+        /// <summary>Active sessions at least one player is connected to.</summary>
+        public int SessionsWithLiveConnection { get; }
+
+        /// <summary>When the oldest active session began.</summary>
+        public DateTimeOffset? OldestActiveSince { get; }
+
+        /// <summary>Script invocations counted.</summary>
+        public long ScriptInvocations { get; }
+
+        /// <summary>Average script invocation time.</summary>
+        public double ScriptAverageMilliseconds { get; }
+
+        /// <summary>Slowest script invocation.</summary>
+        public int ScriptPeakMilliseconds { get; }
+
+        /// <summary>When the script last ran.</summary>
+        public DateTimeOffset? ScriptLastInvokedAt { get; }
+
+        /// <summary>CPU budget per invocation.</summary>
+        public int ScriptCpuMillisecondsBudget { get; }
+
+        /// <summary>Memory budget per invocation.</summary>
+        public long ScriptMemoryBudgetBytes { get; }
+
+        /// <summary>Statement budget per invocation.</summary>
+        public long ScriptMaxStatements { get; }
+
+        /// <summary>Players waiting in matchmaking.</summary>
+        public int MatchmakingQueued { get; }
+
+        /// <summary>How long the longest-waiting player has waited.</summary>
+        public int MatchmakingWaitingLongestSeconds { get; }
+
+        /// <summary>The widest rating band a search has reached.</summary>
+        public decimal MatchmakingWidestSearchBand { get; }
+
+        /// <summary>How long a search may wait before it expires.</summary>
+        public int MatchmakingMaxWaitSeconds { get; }
+
+        /// <summary>Webhook endpoints registered.</summary>
+        public int WebhookEndpoints { get; }
+
+        /// <summary>Endpoints disabled after failing.</summary>
+        public int DisabledWebhookEndpoints { get; }
+
+        /// <summary>Deliveries waiting to be sent.</summary>
+        public int PendingWebhookDeliveries { get; }
+
+        /// <summary>Deliveries that ran out of attempts.</summary>
+        public int DeadWebhookDeliveries { get; }
+
+        /// <summary>True when session writes are batched.</summary>
+        public bool WriteBufferEnabled { get; }
+
+        /// <summary>Sessions with state not yet written out.</summary>
+        public int WriteBufferPendingSessions { get; }
+
+        /// <summary>Bytes of state not yet written out.</summary>
+        public long WriteBufferPendingBytes { get; }
+
+        /// <summary>Most the buffer holds before it writes out early.</summary>
+        public long WriteBufferMaxPendingBytes { get; }
+
+        /// <summary>When these numbers were read.</summary>
+        public DateTimeOffset? ObservedAt { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitGameDiagnostics Read(JsonValue json) => new StarhermitGameDiagnostics(json);
+    }
+
+    /// <summary>A URL the platform calls when something happens in a game.</summary>
+    /// <remarks>
+    /// Deliveries are signed over the timestamp and the body. <see cref="Secret"/> is returned once, when
+    /// the endpoint is created; store it with the backend that verifies deliveries and never ship it in
+    /// a game client.
+    /// </remarks>
+    public sealed class StarhermitWebhookEndpoint : StarhermitModel
+    {
+        private StarhermitWebhookEndpoint(JsonValue json) : base(json)
+        {
+            Id = json["id"].AsGuidOrNull() ?? Guid.Empty;
+            Url = json["url"].AsStringOrNull() ?? string.Empty;
+            Events = json["events"].AsList(value => value.AsStringOrNull() ?? string.Empty);
+            IsEnabled = json["enabled"].AsBooleanOrDefault();
+            ConsecutiveFailures = json["consecutiveFailures"].AsInt32OrDefault();
+            DisabledReason = json["disabledReason"].AsStringOrNull();
+            CreatedAt = json["createdAt"].AsDateTimeOffsetOrNull();
+            Secret = json["secret"].AsStringOrNull();
+        }
+
+        /// <summary>Endpoint id.</summary>
+        public Guid Id { get; }
+
+        /// <summary>Where deliveries go.</summary>
+        public string Url { get; }
+
+        /// <summary>The events delivered to it.</summary>
+        public IReadOnlyList<string> Events { get; }
+
+        /// <summary>False once the platform disabled it for failing; resume it to deliver again.</summary>
+        public bool IsEnabled { get; }
+
+        /// <summary>Failures in a row.</summary>
+        public int ConsecutiveFailures { get; }
+
+        /// <summary>Why it was disabled, while it is.</summary>
+        public string? DisabledReason { get; }
+
+        /// <summary>When it was registered.</summary>
+        public DateTimeOffset? CreatedAt { get; }
+
+        /// <summary>The signing secret - present only in the answer to creating the endpoint.</summary>
+        public string? Secret { get; }
+
+        /// <summary>Reads the model from a response body.</summary>
+        /// <param name="json">Response body.</param>
+        /// <returns>The parsed model.</returns>
+        public static StarhermitWebhookEndpoint Read(JsonValue json) => new StarhermitWebhookEndpoint(json);
+    }
+
     /// <summary>Session statuses the games API reports.</summary>
     public static class StarhermitSessionStatuses
     {
@@ -612,7 +1213,11 @@ namespace Starhermit
     /// <summary>Matchmaking ticket statuses.</summary>
     public static class StarhermitMatchmakingStatuses
     {
-        /// <summary>Waiting for an opponent.</summary>
+        /// <summary>Searching for an opponent.</summary>
+        public const string Queued = "queued";
+
+        /// <summary>Never sent by the API, which reports a searching ticket as <see cref="Queued"/>.</summary>
+        [Obsolete("The API reports a searching ticket as \"queued\". Compare with Queued.")]
         public const string Waiting = "waiting";
 
         /// <summary>Matched into a session.</summary>
@@ -620,5 +1225,8 @@ namespace Starhermit
 
         /// <summary>Cancelled by the player.</summary>
         public const string Cancelled = "cancelled";
+
+        /// <summary>The search ran out of time without a match.</summary>
+        public const string Expired = "expired";
     }
 }

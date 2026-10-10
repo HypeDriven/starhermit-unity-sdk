@@ -412,14 +412,22 @@ namespace Starhermit
     {
         private StarhermitCloudSaveInfo(JsonValue json) : base(json)
         {
-            Exists = json["exists"].AsBooleanOrDefault();
             SizeBytes = json["sizeBytes"].AsInt64OrDefault();
             UpdatedAt = json["updatedAt"].AsDateTimeOffsetOrNull();
             GameKey = json["gameKey"].AsStringOrNull();
+            ETag = json["etag"].AsStringOrNull();
+            // An upload's answer describes what was just stored and carries no "exists" member.
+            Exists = json["exists"].AsBooleanOrDefault(UpdatedAt.HasValue);
         }
 
         /// <summary>True when a save is stored.</summary>
         public bool Exists { get; }
+
+        /// <summary>
+        /// The stored save's version as a strong entity tag (quotes included), or null when nothing is
+        /// stored. Pass it to <see cref="StarhermitSaveCondition.IfMatch"/> to write only over this version.
+        /// </summary>
+        public string? ETag { get; }
 
         /// <summary>Size of the stored archive.</summary>
         public long SizeBytes { get; }
@@ -548,7 +556,23 @@ namespace Starhermit
             IsActive = json["isActive"].AsBooleanOrDefault();
             CreatedAt = json["createdAt"].AsDateTimeOffsetOrNull();
             UpdatedAt = json["updatedAt"].AsDateTimeOffsetOrNull();
+            GameDefinitionId = json["gameDefinitionId"].AsGuidOrNull();
+            Key = json["key"].AsStringOrNull();
+            CurrentPeriodStartedAt = json["currentPeriodStartedAt"].AsDateTimeOffsetOrNull();
+            NextResetAt = json["nextResetAt"].AsDateTimeOffsetOrNull();
         }
+
+        /// <summary>The game that owns the board, for a game's own board; null for a catalog board.</summary>
+        public Guid? GameDefinitionId { get; }
+
+        /// <summary>The key a game's server logic submits scores under; null for a catalog board.</summary>
+        public string? Key { get; }
+
+        /// <summary>When the current period began - earlier entries are not shown. Null for a board that never resets.</summary>
+        public DateTimeOffset? CurrentPeriodStartedAt { get; }
+
+        /// <summary>When the board next starts over. Null for a board that never resets.</summary>
+        public DateTimeOffset? NextResetAt { get; }
 
         /// <summary>Leaderboard id.</summary>
         public Guid Id { get; }

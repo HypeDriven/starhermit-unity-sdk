@@ -81,6 +81,25 @@ namespace Starhermit
                 "voice.setMute",
                 cancellationToken);
 
+        /// <summary>
+        /// Host only: mutes or unmutes another participant. Unlike <see cref="SetMuteAsync"/>, the
+        /// participant cannot lift this one themselves.
+        /// </summary>
+        /// <param name="roomId">The room.</param>
+        /// <param name="targetUserId">The participant to mute.</param>
+        /// <param name="muted">True to mute.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>A task that completes once the mute is applied.</returns>
+        /// <exception cref="StarhermitAuthorizationException">The caller does not host the room.</exception>
+        /// <exception cref="StarhermitNotFoundException">The room or the participant is not there.</exception>
+        public Task SetServerMuteAsync(Guid roomId, Guid targetUserId, bool muted, CancellationToken cancellationToken = default) =>
+            SendAsync(
+                WithBody(
+                    Post($"voice/rooms/{Escape(roomId)}/participants/{Escape(targetUserId)}/server-mute"),
+                    writer => writer.Write("muted", muted)),
+                "voice.setServerMute",
+                cancellationToken);
+
         /// <summary>Closes a voice room.</summary>
         /// <param name="roomId">The room to close.</param>
         /// <param name="cancellationToken">Cancels the request.</param>

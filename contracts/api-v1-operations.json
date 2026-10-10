@@ -122,6 +122,18 @@
       "source": "AuthController.cs"
     },
     {
+      "operationId": "Auth.OAuthProviders",
+      "method": "GET",
+      "path": "/api/v1/auth/oauth/providers",
+      "source": "AuthController.cs"
+    },
+    {
+      "operationId": "Auth.GameSignIn",
+      "method": "GET",
+      "path": "/api/v1/auth/games/{}/sign-in",
+      "source": "AuthController.cs"
+    },
+    {
       "operationId": "Auth.OAuthAuthorize",
       "method": "GET",
       "path": "/api/v1/auth/oauth/{}/authorize",
@@ -356,16 +368,118 @@
       "source": "FriendsController.cs"
     },
     {
+      "operationId": "GameDiagnostics.Get",
+      "method": "GET",
+      "path": "/api/v1/games/{}/diagnostics",
+      "source": "GameDiagnosticsController.cs"
+    },
+    {
+      "operationId": "GameHostAssets.CachePolicy",
+      "method": "GET",
+      "path": "/api/v1/game-host/{}/cache-policy",
+      "source": "GameHostAssetsController.cs"
+    },
+    {
+      "operationId": "GameHostAssets.CorsPreflight",
+      "method": "GET",
+      "path": "/api/v1/game-host/{}/cors-preflight",
+      "source": "GameHostAssetsController.cs"
+    },
+    {
       "operationId": "GameHostAssets.Get",
       "method": "GET",
       "path": "/api/v1/game-host/{}/fallback/{}",
       "source": "GameHostAssetsController.cs"
     },
     {
+      "operationId": "GameReports.File",
+      "method": "POST",
+      "path": "/api/v1/games/{}/reports",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.Mine",
+      "method": "GET",
+      "path": "/api/v1/games/{}/reports/mine",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.ListReports",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.GetReport",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.GetAttachment",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/reports/{}/attachments/{}",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.SetStatus",
+      "method": "PATCH",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.DeleteReport",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/reports/{}",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.ContainerLogs",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/logs",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.ListCrashes",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/crashes",
+      "source": "GameReportsController.cs"
+    },
+    {
+      "operationId": "GameReports.GetCrash",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/container/crashes/{}",
+      "source": "GameReportsController.cs"
+    },
+    {
       "operationId": "GameUploadWs.Get",
       "method": "GET",
       "path": "/ws/v1/game-upload",
       "source": "GameUploadWsController.cs"
+    },
+    {
+      "operationId": "GameWebhooks.List",
+      "method": "GET",
+      "path": "/api/v1/games/{}/webhooks",
+      "source": "GameWebhooksController.cs"
+    },
+    {
+      "operationId": "GameWebhooks.Create",
+      "method": "POST",
+      "path": "/api/v1/games/{}/webhooks",
+      "source": "GameWebhooksController.cs"
+    },
+    {
+      "operationId": "GameWebhooks.Delete",
+      "method": "DELETE",
+      "path": "/api/v1/games/{}/webhooks/{}",
+      "source": "GameWebhooksController.cs"
+    },
+    {
+      "operationId": "GameWebhooks.Resume",
+      "method": "POST",
+      "path": "/api/v1/games/{}/webhooks/{}/resume",
+      "source": "GameWebhooksController.cs"
     },
     {
       "operationId": "Games.GetGame",
@@ -398,6 +512,18 @@
       "source": "GamesController.cs"
     },
     {
+      "operationId": "Games.GetLeaderboards",
+      "method": "GET",
+      "path": "/api/v1/games/{}/leaderboards",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.GetLinkedAchievements",
+      "method": "GET",
+      "path": "/api/v1/games/{}/linked-achievements/{}",
+      "source": "GamesController.cs"
+    },
+    {
       "operationId": "Games.MySessions",
       "method": "GET",
       "path": "/api/v1/games/{}/sessions/mine",
@@ -410,6 +536,18 @@
       "source": "GamesController.cs"
     },
     {
+      "operationId": "Games.GetSessionRecovery",
+      "method": "GET",
+      "path": "/api/v1/games/{}/sessions/{}/recovery",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.LeaveSession",
+      "method": "POST",
+      "path": "/api/v1/games/{}/sessions/{}/leave",
+      "source": "GamesController.cs"
+    },
+    {
       "operationId": "Games.CreateAiSession",
       "method": "POST",
       "path": "/api/v1/games/{}/sessions/ai",
@@ -419,6 +557,12 @@
       "operationId": "Games.Enqueue",
       "method": "POST",
       "path": "/api/v1/games/{}/matchmaking",
+      "source": "GamesController.cs"
+    },
+    {
+      "operationId": "Games.Queues",
+      "method": "GET",
+      "path": "/api/v1/games/{}/queues",
       "source": "GamesController.cs"
     },
     {
@@ -578,6 +722,12 @@
       "source": "GitHubGamesController.cs"
     },
     {
+      "operationId": "GitHubGames.ChangeUrl",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/url",
+      "source": "GitHubGamesController.cs"
+    },
+    {
       "operationId": "GitHubGames.ListMine",
       "method": "GET",
       "path": "/api/v1/me/github-games",
@@ -596,6 +746,18 @@
       "source": "GitHubGamesController.cs"
     },
     {
+      "operationId": "GitHubGames.ListRemoved",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/removed",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.Restore",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/restore",
+      "source": "GitHubGamesController.cs"
+    },
+    {
       "operationId": "GitHubGames.UploadBundle",
       "method": "POST",
       "path": "/api/v1/me/github-games/{}/bundle",
@@ -611,6 +773,72 @@
       "operationId": "GitHubGames.GetStats",
       "method": "GET",
       "path": "/api/v1/me/github-games/{}/stats",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetSessions",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/sessions",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.EndSession",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/sessions/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ListOwnedAchievements",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/achievements",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.CreateOwnedAchievement",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/achievements",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.UpdateOwnedAchievement",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/achievements/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.DeleteOwnedAchievement",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/achievements/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ListOwnedLeaderboards",
+      "method": "GET",
+      "path": "/api/v1/me/github-games/{}/leaderboards",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.CreateOwnedLeaderboard",
+      "method": "POST",
+      "path": "/api/v1/me/github-games/{}/leaderboards",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.UpdateOwnedLeaderboard",
+      "method": "PUT",
+      "path": "/api/v1/me/github-games/{}/leaderboards/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.DeleteOwnedLeaderboard",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/leaderboards/{}",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.ResetPlayerElo",
+      "method": "DELETE",
+      "path": "/api/v1/me/github-games/{}/players/{}/elo",
       "source": "GitHubGamesController.cs"
     },
     {
@@ -635,6 +863,12 @@
       "operationId": "GitHubGames.ListAll",
       "method": "GET",
       "path": "/api/v1/github-games",
+      "source": "GitHubGamesController.cs"
+    },
+    {
+      "operationId": "GitHubGames.GetReleaseNotes",
+      "method": "GET",
+      "path": "/api/v1/github-games/{}/release-notes",
       "source": "GitHubGamesController.cs"
     },
     {
@@ -785,6 +1019,12 @@
       "operationId": "MePublicKeys.RevokeAllPublicKeys",
       "method": "DELETE",
       "path": "/api/v1/me/public-keys/all",
+      "source": "MePublicKeysController.cs"
+    },
+    {
+      "operationId": "MePublicKeys.RevokeCurrentPublicKey",
+      "method": "DELETE",
+      "path": "/api/v1/me/public-keys/current",
       "source": "MePublicKeysController.cs"
     },
     {
@@ -944,6 +1184,36 @@
       "source": "RealtimeController.cs"
     },
     {
+      "operationId": "Realtime.BrowseRooms",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.JoinByCode",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/join-by-code",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.Matchmake",
+      "method": "POST",
+      "path": "/api/v1/realtime/rooms/{}/matchmake",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.UpdateRoom",
+      "method": "PATCH",
+      "path": "/api/v1/realtime/rooms/{}",
+      "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "Realtime.JoinedRooms",
+      "method": "GET",
+      "path": "/api/v1/realtime/rooms/joined",
+      "source": "RealtimeController.cs"
+    },
+    {
       "operationId": "Realtime.MyActiveRoom",
       "method": "GET",
       "path": "/api/v1/realtime/rooms/mine",
@@ -1014,6 +1284,12 @@
       "method": "POST",
       "path": "/api/v1/realtime/rooms/{}/result",
       "source": "RealtimeController.cs"
+    },
+    {
+      "operationId": "RealtimeTickets.Issue",
+      "method": "POST",
+      "path": "/api/v1/realtime/connection-tickets",
+      "source": "RealtimeTicketsController.cs"
     },
     {
       "operationId": "RealtimeWs.Get",
@@ -1100,6 +1376,12 @@
       "source": "SoftwareDownloadController.cs"
     },
     {
+      "operationId": "Terms.Get",
+      "method": "GET",
+      "path": "/api/v1/terms",
+      "source": "TermsController.cs"
+    },
+    {
       "operationId": "Time.GetLocalServerTime",
       "method": "GET",
       "path": "/api/v1/time",
@@ -1139,6 +1421,12 @@
       "operationId": "Voice.SetMute",
       "method": "POST",
       "path": "/api/v1/voice/rooms/{}/mute",
+      "source": "VoiceController.cs"
+    },
+    {
+      "operationId": "Voice.SetServerMute",
+      "method": "POST",
+      "path": "/api/v1/voice/rooms/{}/participants/{}/server-mute",
       "source": "VoiceController.cs"
     },
     {

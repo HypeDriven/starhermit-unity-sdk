@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Starhermit.Json;
@@ -63,6 +64,41 @@ namespace Starhermit
                 .WithQuery("client", client);
             return Rest.BuildUri(request);
         }
+
+        /// <summary>
+        /// Lists the OAuth providers this deployment offers - one sign-in button each. A provider that
+        /// is configured but has no credentials is not listed.
+        /// </summary>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The providers.</returns>
+        public async Task<IReadOnlyList<StarhermitOAuthProvider>> GetOAuthProvidersAsync(CancellationToken cancellationToken = default)
+        {
+            var json = await SendJsonAsync(
+                    Get("auth/oauth/providers").WithCredential(StarhermitCredential.None),
+                    "auth.getOAuthProviders",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return json["providers"].AsList(StarhermitOAuthProvider.Read);
+        }
+
+        /// <summary>
+        /// Exchanges the account session for a single-use connection ticket, for a socket handshake
+        /// that has to carry its credential in the URL.
+        /// </summary>
+        /// <remarks>
+        /// A URL is the least private part of a request - proxy logs, history, error pages - so a
+        /// ticket that is spent by its first handshake and valid only on <c>/ws</c> belongs there
+        /// rather than an access token good for the whole API. For a game's launch token use
+        /// <see cref="StarhermitGameClient.IssueConnectionTicketAsync"/>.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The ticket.</returns>
+        public Task<StarhermitConnectionTicket> IssueConnectionTicketAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(
+                Post("realtime/connection-tickets").WithCredential(StarhermitCredential.Account),
+                "auth.issueConnectionTicket",
+                StarhermitConnectionTicket.Read,
+                cancellationToken);
 
         /// <summary>
         /// Runs a full OAuth sign-in through the configured browser adapter and adopts the session it
