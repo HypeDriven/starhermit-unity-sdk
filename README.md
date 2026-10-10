@@ -81,7 +81,7 @@ against small API stubs, so that half of the package is type-checked in CI too.
 The suite runs on NUnit, which is also Unity Test Framework's engine: the same files under
 `Tests/Runtime` execute as EditMode tests inside the editor.
 
-Ten of the 194 tests read a real deployment instead of a fixture, so a contract drift on the server shows
+Ten of the 195 tests read a real deployment instead of a fixture, so a contract drift on the server shows
 up here rather than in a player's bug report. They are skipped unless you point them at one. Five read
 the anonymous surface; the other five sign in, which they do the way a player does - registering a key
 and redeeming the link the deployment emails - so they also need the directory that mail lands in:

@@ -22,7 +22,7 @@ Starhermit platform. It ships:
   builds.
 - High-level helpers (presence heartbeat, cloud-save synchroniser, message deduplicator) and a `Raw`
   client for endpoints a future deployment adds before the SDK types them.
-- 194 tests (184 hermetic, 10 against a live deployment), eight samples, XML documentation on every
+- 195 tests (185 hermetic, 10 against a live deployment), eight samples, XML documentation on every
   public member, and a generated coverage manifest that fails the build when an API operation has no
   SDK mapping.
 
@@ -134,7 +134,10 @@ client survives scene loads.
 
 ### 4.3 Results, errors and cancellation
 
-Successful calls return typed models. A non-success response throws `StarhermitApiException` carrying
+Successful calls return typed models - except where the deployment answers `204` with no body, where
+the call returns a plain `Task`: reading a model out of no body would hand back one made of empty
+fields, indistinguishable from a real one. Declining a game or room invite, deleting a chat message and
+deleting a game's whole settings document are among them. A non-success response throws `StarhermitApiException` carrying
 HTTP status, the server's message, any machine-readable code, the request id, `Retry-After`, redacted
 headers, and a size-capped redacted body. Typed subclasses:
 `StarhermitBadRequestException`, `StarhermitValidationException` (field errors keyed by wire name),
@@ -482,7 +485,7 @@ codecs. There is no reflection anywhere in the runtime.
 
 ### 17.1 What runs today
 
-- **184 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
+- **185 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
   headers, credentials, response mapping, cancellation, typed errors and limit refusals, paging), retry
   eligibility and jitter bounds, refresh coordination and rotation persistence, redaction, socket
   machinery (ordering, backpressure, reconnection, policy closes, handler exceptions, a ticket per
@@ -496,8 +499,8 @@ codecs. There is no reflection anywhere in the runtime.
   names the directory the deployment's mail lands in: they create an account the way a player does -
   register a key, redeem the emailed link, accept the terms - never by minting a token, then check
   public-key sign-in, a fresh single-use ticket per handshake (a replayed one is refused), a launch
-  token's ticket reaching its own game's room and not another game's, room settings and filtered
-  quick-join across two accounts, and conditional cloud-save downloads. `tools/live-test.sh` stands up
+  token's ticket reaching its own game's room and not another game's, room settings, declining a room
+  invite (a `204`) and filtered quick-join across two accounts, and conditional cloud-save downloads. `tools/live-test.sh` stands up
   a throwaway backend from the checkout (Postgres, Redis, the Api and `tools/smtp_sink.py`), runs them,
   and removes it; all ten pass against it.
 - **Three Unity compile-checks** (`build/unity/*.csproj`) type-check the Unity-only code - the

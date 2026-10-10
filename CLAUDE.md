@@ -11,7 +11,7 @@ headless server.
 
 The package is implemented and verified: 227 of the API's 243 operations are mapped to typed methods
 (10 more are classified as not-for-clients, 6 are the WebSocket routes), all six socket protocols have
-connection classes, and 194 tests run green (10 of them skip unless a live deployment is named). `spec.md` describes what it does; this file describes how
+connection classes, and 195 tests run green (10 of them skip unless a live deployment is named). `spec.md` describes what it does; this file describes how
 to work on it.
 
 This is one of the agent-generated projects under the parent dashboard pipeline. The parent
@@ -124,6 +124,9 @@ refusals needed one.
 
 ## Invariants
 
+- An operation whose route answers `204` (or `Ok()` with no value) returns a plain `Task` through the
+  body-less `SendAsync` overload. A model read from no body is a fabricated model of empty fields;
+  check the backend action's success return, including any helper it calls, before choosing a reader.
 - Public members carry XML documentation and the build treats warnings as errors — both gates are on
   in every project, so an undocumented public member fails CI.
 - Runtime assemblies never reference `UnityEditor`; models never reference `GameObject`,

@@ -304,6 +304,44 @@ namespace Starhermit.Tests
         }
 
         [Test]
+        public async Task RoutesAnsweringNoContent_ReturnNoModel()
+        {
+            // Each of these answers 204. Reading a model from no body used to hand back an invite,
+            // message or settings document made of empty fields, which a caller could not tell from a
+            // real one.
+            var transport = new FakeTransport().Always(_ => new FakeResponse(204));
+            using var client = await TestHarness.SignedInAsync(transport);
+            var game = client.Games.ForSlug("chess");
+
+            await client.RealtimeRooms.DeclineInviteAsync(OtherId);
+            Assert.AreEqual("POST", transport.Last.Method);
+            Assert.AreEqual($"/api/v1/realtime/rooms/invites/{OtherId}/decline", transport.Last.Path);
+
+            await game.DeclineInviteAsync(OtherId);
+            Assert.AreEqual("POST", transport.Last.Method);
+            Assert.AreEqual($"/api/v1/games/chess/invites/{OtherId}/decline", transport.Last.Path);
+
+            await game.DeleteSettingsAsync();
+            Assert.AreEqual("DELETE", transport.Last.Method);
+            Assert.AreEqual("/api/v1/games/chess/settings", transport.Last.Path);
+
+            await client.Chat.DeleteMessageAsync(GameId, OtherId);
+            Assert.AreEqual("DELETE", transport.Last.Method);
+            Assert.AreEqual($"/api/v1/chat/conversations/{GameId}/messages/{OtherId}", transport.Last.Path);
+
+            foreach (var method in new[]
+                     {
+                         typeof(StarhermitRealtimeRoomsClient).GetMethod(nameof(StarhermitRealtimeRoomsClient.DeclineInviteAsync)),
+                         typeof(StarhermitGameClient).GetMethod(nameof(StarhermitGameClient.DeclineInviteAsync)),
+                         typeof(StarhermitGameClient).GetMethod(nameof(StarhermitGameClient.DeleteSettingsAsync)),
+                         typeof(StarhermitChatClient).GetMethod(nameof(StarhermitChatClient.DeleteMessageAsync))
+                     })
+            {
+                Assert.AreEqual(typeof(Task), method!.ReturnType, method.DeclaringType!.Name + "." + method.Name + " has no body to read");
+            }
+        }
+
+        [Test]
         public async Task OwnerReports_PageReadAndMoveAlong()
         {
             var detail = "{\"id\":\"" + OtherId + "\",\"kind\":\"bug\",\"status\":\"acknowledged\",\"title\":\"t\",\"description\":\"d\"," +

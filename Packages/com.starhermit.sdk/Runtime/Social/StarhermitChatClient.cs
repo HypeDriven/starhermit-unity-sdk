@@ -282,15 +282,18 @@ namespace Starhermit
         /// <param name="conversationId">The conversation.</param>
         /// <param name="messageId">The message to delete.</param>
         /// <param name="cancellationToken">Cancels the request.</param>
-        /// <returns>The deleted message as the server now reports it.</returns>
-        public Task<StarhermitMessage> DeleteMessageAsync(
+        /// <returns>A task that completes once the message is deleted.</returns>
+        /// <remarks>
+        /// The deployment answers <c>204</c> and keeps a tombstone; the chat socket's
+        /// <c>message_deleted</c> event carries the message as it now stands.
+        /// </remarks>
+        public Task DeleteMessageAsync(
             Guid conversationId,
             Guid messageId,
             CancellationToken cancellationToken = default) =>
             SendAsync(
                 Delete($"chat/conversations/{Escape(conversationId)}/messages/{Escape(messageId)}"),
                 "chat.deleteMessage",
-                StarhermitMessage.Read,
                 cancellationToken);
     }
 }

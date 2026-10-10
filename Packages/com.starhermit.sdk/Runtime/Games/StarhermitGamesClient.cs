@@ -273,15 +273,12 @@ namespace Starhermit
                 cancellationToken);
 
         /// <summary>Declines an invite.</summary>
+        /// <remarks>The deployment answers <c>204</c>: there is no invite to read back.</remarks>
         /// <param name="inviteId">The invite to decline.</param>
         /// <param name="cancellationToken">Cancels the request.</param>
-        /// <returns>The closed invite.</returns>
-        public Task<StarhermitGameInvite> DeclineInviteAsync(Guid inviteId, CancellationToken cancellationToken = default) =>
-            SendAsync(
-                Request("POST", $"invites/{Escape(inviteId)}/decline"),
-                "games.declineInvite",
-                StarhermitGameInvite.Read,
-                cancellationToken);
+        /// <returns>A task that completes once the invite is declined.</returns>
+        public Task DeclineInviteAsync(Guid inviteId, CancellationToken cancellationToken = default) =>
+            SendAsync(Request("POST", $"invites/{Escape(inviteId)}/decline"), "games.declineInvite", cancellationToken);
 
         /// <summary>
         /// Lists the caller's replays.
@@ -391,10 +388,11 @@ namespace Starhermit
                 cancellationToken);
 
         /// <summary>Deletes the whole settings document.</summary>
+        /// <remarks>The deployment answers <c>204</c>: read the settings again for the (empty) document.</remarks>
         /// <param name="cancellationToken">Cancels the request.</param>
-        /// <returns>The empty document.</returns>
-        public Task<StarhermitGameSettings> DeleteSettingsAsync(CancellationToken cancellationToken = default) =>
-            SendAsync(Request("DELETE", "settings"), "games.deleteSettings", StarhermitGameSettings.Read, cancellationToken);
+        /// <returns>A task that completes once the document is deleted.</returns>
+        public Task DeleteSettingsAsync(CancellationToken cancellationToken = default) =>
+            SendAsync(Request("DELETE", "settings"), "games.deleteSettings", cancellationToken);
 
         /// <summary>Reads one settings key.</summary>
         /// <param name="key">The key to read.</param>

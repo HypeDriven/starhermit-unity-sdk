@@ -59,6 +59,14 @@ live contract suite runs signed in.
 
 ### Changed
 
+- **Breaking: four calls whose route answers `204` now return `Task`.** `RealtimeRooms.DeclineInviteAsync`
+  (was `Task<StarhermitRoomInvite>`), `StarhermitGameClient.DeclineInviteAsync` (was
+  `Task<StarhermitGameInvite>`), `StarhermitGameClient.DeleteSettingsAsync` (was
+  `Task<StarhermitGameSettings>`) and `Chat.DeleteMessageAsync` (was `Task<StarhermitMessage>`). The
+  deployment sends no body for any of them, so the model they returned was assembled from nothing - an
+  empty id, status and content that read like a real answer. Code that awaited them without using
+  the result compiles unchanged; code that read the result was reading empty fields. Every other
+  operation was checked against its backend action and already matched.
 - **Socket handshakes present a connection ticket, not the access token.** Every connect and every
   reconnect fetches a fresh single-use ticket immediately before the handshake and passes it as
   `?ticket=`, with no `Authorization` header beside it; a launch-scoped socket buys its ticket with

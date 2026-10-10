@@ -166,7 +166,7 @@ namespace Starhermit.Tests
         }
 
         [Test]
-        public async Task Rooms_KeepTheirSettings_AndQuickJoinFindsThemByFilter()
+        public async Task Rooms_KeepTheirSettings_DeclineAnInvite_AndQuickJoinFindsThemByFilter()
         {
             var host = _player!.Client;
             using var guestAccount = await LiveAccount.RegisterAsync(_deployment!);
@@ -194,6 +194,16 @@ namespace Starhermit.Tests
                 Assert.AreEqual(2, room.Config.SeatsPerTeam);
                 Assert.AreEqual("dock-" + tag, room.Config.Metadata["map"].AsString());
                 Assert.IsNotEmpty(room.JoinCode, "every room is created with a join code");
+
+                // An invitation goes to a friend, and declining one answers 204 - no invitation to read
+                // back. Answering it twice is refused, which is how the decline is seen to have landed.
+                await host.Friends.SendRequestAsync(guestAccount.UserId);
+                var request = (await guest.Friends.GetRequestsAsync()).Single(r => r.SenderUserId == _player.UserId);
+                await guest.Friends.AcceptRequestAsync(request.Id);
+                var invite = await host.RealtimeRooms.CreateInviteAsync(room.Id, guestAccount.UserId);
+                await guest.RealtimeRooms.DeclineInviteAsync(invite.Id);
+                Assert.IsFalse((await guest.RealtimeRooms.GetInvitesAsync()).Any(i => i.Id == invite.Id), "a declined invitation is no longer pending");
+                Assert.ThrowsAsync<StarhermitConflictException>(() => guest.RealtimeRooms.DeclineInviteAsync(invite.Id));
 
                 await host.RealtimeRooms.OpenRoomAsync(room.Id);
 

@@ -105,15 +105,12 @@ namespace Starhermit
                 cancellationToken);
 
         /// <summary>Declines a room invitation.</summary>
+        /// <remarks>The deployment answers <c>204</c>: there is no invitation to read back.</remarks>
         /// <param name="inviteId">The invitation to decline.</param>
         /// <param name="cancellationToken">Cancels the request.</param>
-        /// <returns>The closed invitation.</returns>
-        public Task<StarhermitRoomInvite> DeclineInviteAsync(Guid inviteId, CancellationToken cancellationToken = default) =>
-            SendAsync(
-                Post($"realtime/rooms/invites/{Escape(inviteId)}/decline"),
-                "realtime.declineInvite",
-                StarhermitRoomInvite.Read,
-                cancellationToken);
+        /// <returns>A task that completes once the invitation is declined.</returns>
+        public Task DeclineInviteAsync(Guid inviteId, CancellationToken cancellationToken = default) =>
+            SendAsync(Post($"realtime/rooms/invites/{Escape(inviteId)}/decline"), "realtime.declineInvite", cancellationToken);
 
         /// <summary>
         /// Joins the oldest open room with a seat.
