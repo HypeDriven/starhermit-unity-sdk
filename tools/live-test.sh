@@ -10,6 +10,10 @@
 #   3. tools/smtp_sink.py, with the deployment's SMTP settings pointed at it, so the tests can read
 #      the verification link a player would be emailed.
 #   4. dotnet test --filter Category=Live, with STARHERMIT_TEST_BASE_URL and STARHERMIT_TEST_MAILBOX.
+#   5. With STARHERMIT_LIVE_AOT=1, the same deployment driven by build/aot-smoke: the package's runtime
+#      published with Native AOT and full trimming - no JIT, every unreferenced member removed, the
+#      nearest thing to a stripped IL2CPP player that runs without a Unity editor. Needs clang, or gcc
+#      (used automatically when clang is absent).
 #
 # Extra arguments go to dotnet test. Needs docker, python3 and the .NET 8 SDK; STARHERMIT_BACKEND
 # names the backend checkout when it is not at ~/pi/dashboard/projects/starhermit. Only containers
@@ -98,6 +102,18 @@ status=0
 STARHERMIT_TEST_BASE_URL="http://127.0.0.1:$api_port/api/v1/" \
 STARHERMIT_TEST_MAILBOX="$work/mail" \
   dotnet test "$root/build/tests/Starhermit.Tests.csproj" --nologo --filter "Category=Live" "$@" || status=$?
+
+if [ "$status" -eq 0 ] && [ "${STARHERMIT_LIVE_AOT:-0}" = "1" ]; then
+  echo "==> Publishing the SDK with Native AOT and full trimming"
+  linker=()
+  command -v clang >/dev/null 2>&1 || linker=(-p:CppCompilerAndLinker=gcc)
+  dotnet publish "$root/build/aot-smoke/Starhermit.AotSmoke.csproj" -c Release -r linux-x64 \
+    --artifacts-path "$work/aot" -o "$work/aot-out" --nologo -v quiet ${linker[@]+"${linker[@]}"}
+  echo "==> Running the AOT build against the deployment"
+  STARHERMIT_TEST_BASE_URL="http://127.0.0.1:$api_port/api/v1/" \
+  STARHERMIT_TEST_MAILBOX="$work/mail" \
+    "$work/aot-out/starhermit-aot-smoke" || status=$?
+fi
 
 if [ "$status" -ne 0 ]; then
   echo "==> Api log (last 40 lines)" >&2

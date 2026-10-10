@@ -56,6 +56,11 @@ live contract suite runs signed in.
   `StarhermitLeaderboard.Key`, `GameDefinitionId`, `CurrentPeriodStartedAt` and `NextResetAt`;
   `StarhermitGameSessionSummary.PausedAt`; `StarhermitMatchmakingTicket.WaitedSeconds`,
   `SearchEloBand` and `MaxWaitSeconds`; `StarhermitMatchmakingStatuses.Queued` and `Expired`.
+- **AOT and stripping checks without a Unity licence.** `build/aot/Starhermit.AotCheck.csproj`
+  compiles the runtime under the .NET trimming and AOT analyzers with warnings as errors, as part of
+  the solution build. `build/aot-smoke` publishes it with Native AOT and full trimming and, with
+  `STARHERMIT_LIVE_AOT=1 tools/live-test.sh`, drives a live deployment through registration, key
+  sign-in, a ticketed socket and versioned cloud saves (17 checks, all passing).
 
 ### Changed
 

@@ -60,7 +60,11 @@ type name that arrives from the wire, so managed stripping cannot remove a membe
 needs and AOT has nothing to fail to compile.
 
 The package ships `Runtime/link.xml`, which preserves its own assemblies and the crypto types the
-optional encrypted token store uses. High stripping is a supported and tested configuration.
+optional encrypted token store uses. High stripping is a supported configuration, and two checks hold
+the package to it without an editor: the runtime compiles clean under the .NET trimming and AOT
+analyzers with warnings as errors, and a Native AOT, fully trimmed build of it signs in, opens a
+ticketed socket and syncs a cloud save against a live deployment. The IL2CPP player builds themselves
+run in the licensed CI matrix.
 
 ## Unity lifecycle
 

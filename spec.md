@@ -506,6 +506,16 @@ codecs. There is no reflection anywhere in the runtime.
 - **Three Unity compile-checks** (`build/unity/*.csproj`) type-check the Unity-only code - the
   `UnityWebRequest` transport, the WebGL bridge, settings, audio adapters, editor tooling and all
   eight samples - against small API stubs, on machines with no Unity licence.
+- **An AOT compile-check** (`build/aot/Starhermit.AotCheck.csproj`, part of the solution build) compiles
+  the runtime, Unity paths included, under the .NET trimming and AOT analyzers with warnings as errors.
+  IL2CPP with High stripping fails on what they flag - reflection over unreferenced members, types named
+  at runtime, generated code - so the hand-mapped design is enforced rather than claimed. A canary using
+  `Activator`/`MakeGenericType` fails it (IL2055, IL2057, IL3050), which is how the check was proven live.
+- **An AOT smoke build** (`build/aot-smoke`): the runtime published with Native AOT and full trimming -
+  no JIT, every unreferenced member removed, the nearest thing to a stripped IL2CPP player that runs
+  without an editor - driving a live deployment through registration by emailed link, eight public-key
+  sign-ins, a ticketed socket and its reconnect, and versioned cloud saves (17 checks).
+  `STARHERMIT_LIVE_AOT=1 tools/live-test.sh` runs it after the live suite; all 17 pass.
 - **A generated coverage manifest**: `tools/generate_coverage.py` reads the backend's controllers and
   emits `contracts/coverage-manifest.json`, `Documentation~/api-coverage.md` and the data
   `ContractCoverageTests` enforces. Of 243 API operations, 227 are mapped to typed SDK methods, 6 are
@@ -518,7 +528,9 @@ codecs. There is no reflection anywhere in the runtime.
 
 The CI workflow defines the editor matrix (2021.3 LTS, 2022.3 LTS, Unity 6) and IL2CPP player builds
 for Linux, Android and WebGL with High stripping, gated on a `UNITY_LICENSE` secret. Those jobs have
-not been run here. Until they have, the platform matrix in §2.1 describes intended support rather than
+not been run here. The AOT compile-check and smoke build above cover the failure modes stripping and
+ahead-of-time compilation introduce, but not Unity's own player pipeline, its WebGL bridge or a device;
+until the editor jobs have run, the platform matrix in §2.1 describes intended support rather than
 qualified support, and no platform should be advertised as verified.
 
 ### 17.3 Not yet built

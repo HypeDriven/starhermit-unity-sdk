@@ -23,7 +23,7 @@ This is one of the agent-generated projects under the parent dashboard pipeline.
 ./tools/verify.sh                 # the whole gate: build all, test, regenerate + check API coverage
 ./tools/verify.sh --skip-coverage # same without the backend checkout
 
-dotnet build Starhermit.Sdk.sln   # 6 projects: SDK, publishing, tests, 3 Unity compile-checks
+dotnet build Starhermit.Sdk.sln   # 7 projects: SDK, publishing, tests, 3 Unity compile-checks, AOT check
 dotnet test build/tests/Starhermit.Tests.csproj
 dotnet test build/tests/Starhermit.Tests.csproj --filter "FullyQualifiedName~ProtocolTests"
 
@@ -49,6 +49,13 @@ signed-in half (`LiveSessionTests`) needs `STARHERMIT_TEST_MAILBOX` as well as
 and the deployment's per-address registration throttle must be off (`live-test.sh` sets
 `PublicKeyAuth__RegistrationThrottleHours=0`). Public-key sign-in is limited to sixty requests a minute
 per address, so the tests share one registered client rather than signing each test in.
+
+`STARHERMIT_LIVE_AOT=1 ./tools/live-test.sh` also publishes `build/aot-smoke` with Native AOT and full
+trimming (gcc is used when clang is absent) and runs it against the same deployment. Together with
+`build/aot/Starhermit.AotCheck.csproj` - the runtime under the trimming and AOT analyzers, warnings as
+errors, in the ordinary build - it is how an IL2CPP-with-High-stripping regression shows up without a
+Unity licence. **A new runtime code path must keep the AOT check clean**: never silence an IL2xxx or
+IL3xxx warning, map the JSON by hand instead.
 
 ## Architecture
 

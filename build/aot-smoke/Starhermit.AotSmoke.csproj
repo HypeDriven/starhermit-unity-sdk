@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The package's runtime compiled ahead of time and fully trimmed, driving a live deployment.
+
+    The closest thing to an IL2CPP player build that runs without a Unity editor: Native AOT
+    compiles every method ahead of time (no JIT to fall back on, as on iOS and consoles) and full
+    trimming removes every member nothing references (as high managed stripping does). If a code
+    path the SDK takes at runtime needed reflection, a generated type or a stripped member, this
+    binary fails where a player would. tools/live-test.sh runs it with STARHERMIT_LIVE_AOT=1.
+
+    It is not built by the solution: publishing it needs the native toolchain (clang, or gcc with
+    -p:CppCompilerAndLinker=gcc), which the ordinary build does not.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>starhermit-aot-smoke</AssemblyName>
+    <RootNamespace>Starhermit.AotSmoke</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../Packages/com.starhermit.sdk/Runtime/**/*.cs"
+             Exclude="../../Packages/com.starhermit.sdk/Runtime/PublishingTools/**/*.cs" />
+  </ItemGroup>
+
+</Project>

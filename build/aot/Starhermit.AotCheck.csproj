@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compile-check of the package's runtime code under the .NET AOT and trimming analyzers.
+
+    Nothing here ships. IL2CPP with high managed stripping fails on the same things these analyzers
+    flag - reflection over members nothing references, types named at runtime, code generated at
+    runtime (MakeGenericType, Expression.Compile, reflection-based serializers) - so treating their
+    warnings as errors turns "the package maps JSON by hand so stripping has nothing to break" from
+    a claim into a build failure the moment it stops being true, on a machine with no Unity editor.
+    The editor build (Editor/StarhermitCiBuild.cs) remains the end-to-end proof on real targets.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Starhermit.AotCheck</AssemblyName>
+    <RootNamespace>Starhermit</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);UNITY_2021_3_OR_NEWER;ENABLE_IL2CPP</DefineConstants>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../unity/stubs/UnityEngineStubs.cs" />
+    <Compile Include="../../Packages/com.starhermit.sdk/Runtime/**/*.cs" />
+  </ItemGroup>
+
+</Project>
