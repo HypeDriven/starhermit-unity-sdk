@@ -28,7 +28,8 @@ echo "==> Testing"
 dotnet test "$root/build/tests/Starhermit.Tests.csproj" --nologo -v minimal --no-build
 
 # The live contract tests skip themselves unless a deployment is named, so this is a no-op by default
-# and a real contract check when STARHERMIT_TEST_BASE_URL points somewhere.
+# and a real contract check when STARHERMIT_TEST_BASE_URL points somewhere (and, for the signed-in half,
+# STARHERMIT_TEST_MAILBOX). tools/live-test.sh runs them against a throwaway backend.
 if [ -n "${STARHERMIT_TEST_BASE_URL:-}" ]; then
   echo "==> Checking the live contract against $STARHERMIT_TEST_BASE_URL"
 fi

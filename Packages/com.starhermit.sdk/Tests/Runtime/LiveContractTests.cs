@@ -23,9 +23,10 @@ namespace Starhermit.Tests
     /// STARHERMIT_TEST_BASE_URL=http://starhermit.test:5050/api/v1/ dotnet test
     /// </code>
     /// <para>
-    /// Only the anonymous surface is exercised. Authenticated routes need a session this suite has no
-    /// safe way to obtain: it will not mint one from a signing secret, because a test that forges
-    /// credentials stops testing the thing it claims to test.
+    /// Only the anonymous surface is exercised here. <see cref="LiveSessionTests"/> covers the signed-in
+    /// half, with an account it creates the way a player does rather than a token minted from a signing
+    /// secret - a test that forges credentials stops testing the thing it claims to test.
+    /// <c>tools/live-test.sh</c> runs both against a throwaway backend.
     /// </para>
     /// </remarks>
     [TestFixture]

@@ -11,7 +11,7 @@ headless server.
 
 The package is implemented and verified: 227 of the API's 243 operations are mapped to typed methods
 (10 more are classified as not-for-clients, 6 are the WebSocket routes), all six socket protocols have
-connection classes, and 178 tests run green (5 of them skip unless a live deployment is named). `spec.md` describes what it does; this file describes how
+connection classes, and 194 tests run green (10 of them skip unless a live deployment is named). `spec.md` describes what it does; this file describes how
 to work on it.
 
 This is one of the agent-generated projects under the parent dashboard pipeline. The parent
@@ -41,8 +41,14 @@ Unity code path silently stops being checked.
 Tests use **NUnit**, which is also Unity Test Framework's engine, so `Tests/Runtime/*.cs` run both
 under `dotnet test` and as EditMode tests inside the editor.
 
-For contract work against a live backend: `cd ../starhermit && docker compose up -d --build` (host
-5000), or the dev estate on `http://starhermit.test:5050`.
+For contract work against a live backend, `./tools/live-test.sh` builds the Api from `../starhermit`
+into a temporary directory, runs it against throwaway Postgres/Redis containers with
+`tools/smtp_sink.py` as its mail server, runs every `Category=Live` test, and removes it all. The
+signed-in half (`LiveSessionTests`) needs `STARHERMIT_TEST_MAILBOX` as well as
+`STARHERMIT_TEST_BASE_URL`: it registers accounts through the emailed link rather than minting tokens,
+and the deployment's per-address registration throttle must be off (`live-test.sh` sets
+`PublicKeyAuth__RegistrationThrottleHours=0`). Public-key sign-in is limited to sixty requests a minute
+per address, so the tests share one registered client rather than signing each test in.
 
 ## Architecture
 
@@ -89,9 +95,16 @@ keep it stripped.
 
 `StarhermitConnection` (`Runtime/Core/Sockets/`) owns connecting, credentials, ordered sends, bounded
 queues, reconnection and event dispatch. The six protocol classes only describe their path, query
-parameters and frames. Reconnection deliberately **stops** on authorization and policy closes, and
-`OnReconnectedAsync` refetches or rejoins because membership may not have survived — a failure there
-is logged, not treated as a broken socket.
+parameters and frames. Every handshake - including each reconnect - fetches a fresh connection ticket
+first (a ticket is spent by the handshake that presents it) and sends it as `?ticket=` with no
+`Authorization` header; only a `404` from the ticket endpoint falls back to the token. A launch-scoped
+socket buys its ticket with the launch token, never the account session, because the ticket copies the
+claims of whatever bought it. `FakeTransport` answers ticket requests ahead of the script
+(`ConnectionTickets`; null routes them through it, `WithoutConnectionTickets()` plays an old deployment).
+
+Reconnection deliberately **stops** on authorization and policy closes, and `OnReconnectedAsync`
+refetches or rejoins because membership may not have survived — a failure there is logged, not treated
+as a broken socket.
 
 ### Contract coupling worth knowing
 

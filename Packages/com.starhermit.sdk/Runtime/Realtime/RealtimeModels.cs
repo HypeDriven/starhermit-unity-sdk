@@ -206,7 +206,10 @@ namespace Starhermit
             JoinInProgress = json["joinInProgress"].AsBooleanOrDefault();
         }
 
-        /// <summary>Room id - join it with <see cref="StarhermitRealtimeRoomsClient.QuickJoinAsync"/> or an invite.</summary>
+        /// <summary>
+        /// Room id - reached by quick-join (<see cref="StarhermitRealtimeRoomsClient.QuickJoinAsync(string, StarhermitQuickJoinFilter, System.Threading.CancellationToken)"/>)
+        /// or an invite.
+        /// </summary>
         public Guid Id { get; }
 
         /// <summary>The game the room is for.</summary>
@@ -291,6 +294,104 @@ namespace Starhermit
             if (BackfillAllEmptySeats) writer.Write("backfillAllEmptySeats", true);
             if (JoinInProgress.IsSet) writer.Write("joinInProgress", JoinInProgress.Value);
             writer.WriteIfPresent("expectedRevision", ExpectedRevision);
+        }
+    }
+
+    /// <summary>
+    /// How a new room is laid out and found. Unset members take the deployment's defaults.
+    /// </summary>
+    /// <remarks>
+    /// A room is found three independent ways: an invite reaches one person,
+    /// <see cref="StarhermitRealtimeRoomsClient.OpenRoomAsync"/> makes it quick-joinable, and
+    /// <see cref="IsVisible"/> lists it in the room browser. Every room is also created with a join
+    /// code (<see cref="StarhermitRoom.JoinCode"/>), which the deployment chooses. Seat and metadata
+    /// limits are the game's and are enforced by the deployment, not here.
+    /// </remarks>
+    public sealed class StarhermitRoomSettings
+    {
+        /// <summary>How many teams. Defaults to 2.</summary>
+        public int TeamCount { get; set; } = 2;
+
+        /// <summary>How many seats per team. Defaults to 1.</summary>
+        public int SeatsPerTeam { get; set; } = 1;
+
+        /// <summary>Seats after <see cref="StarhermitRealtimeRoomsClient.OpenRoomAsync"/> before empty seats are backfilled; null for the deployment's default.</summary>
+        public int? BackfillAfterSeconds { get; set; }
+
+        /// <summary>Seats to give AI players at creation. They take capacity from invites and quick-join.</summary>
+        public int AiPlayers { get; set; }
+
+        /// <summary>
+        /// Most empty seats the start-time backfill may give to AI players. Null - the default - fills
+        /// every empty seat; 0 starts the match with them empty.
+        /// </summary>
+        public int? BackfillAiPlayers { get; set; }
+
+        /// <summary>
+        /// Keeps the room taking players after its match starts: a seat given up mid-match is vacated
+        /// rather than handed to an AI, and a vacant seat can be joined into the running game.
+        /// </summary>
+        public bool JoinInProgress { get; set; }
+
+        /// <summary>The room's name, shown in the browser; null for none.</summary>
+        public string? Name { get; set; }
+
+        /// <summary>Lists the room in the room browser. Off by default: a room filling by its code stays unlisted.</summary>
+        public bool IsVisible { get; set; }
+
+        /// <summary>Room metadata in whatever shape the game defines; quick-join filters match against it.</summary>
+        public JsonValue? Metadata { get; set; }
+
+        /// <summary>Writes the settings as the API's request body, after the game slug.</summary>
+        /// <param name="writer">Writer positioned inside the request object.</param>
+        public void Write(JsonWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            writer.Write("teamCount", TeamCount);
+            writer.Write("seatsPerTeam", SeatsPerTeam);
+            writer.WriteIfPresent("backfillAfterSeconds", BackfillAfterSeconds);
+            writer.Write("aiPlayers", AiPlayers);
+            if (Metadata != null) writer.Write("metadata", Metadata);
+            writer.WriteIfPresent("name", Name);
+            if (IsVisible) writer.Write("isVisible", true);
+            writer.WriteIfPresent("backfillAiPlayers", BackfillAiPlayers);
+            if (JoinInProgress) writer.Write("joinInProgress", true);
+        }
+    }
+
+    /// <summary>
+    /// What a quick-join will accept. Every condition given must hold; nothing given means any open
+    /// room with a seat.
+    /// </summary>
+    public sealed class StarhermitQuickJoinFilter
+    {
+        /// <summary>Only rooms with exactly this many teams.</summary>
+        public int? TeamCount { get; set; }
+
+        /// <summary>Only rooms with exactly this many seats per team.</summary>
+        public int? SeatsPerTeam { get; set; }
+
+        /// <summary>
+        /// A JSON object the room's metadata must contain: every top-level property given must be
+        /// present with an equal value, whatever else the host put there.
+        /// </summary>
+        public JsonValue? Metadata { get; set; }
+
+        /// <summary>
+        /// Also consider running matches that take players mid-match, after every room still filling.
+        /// Off by default, so a game that does not expect to land in a running match never does.
+        /// </summary>
+        public bool IncludeInProgress { get; set; }
+
+        /// <summary>Writes the filter as part of the API's request body.</summary>
+        /// <param name="writer">Writer positioned inside the request object.</param>
+        public void Write(JsonWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            writer.WriteIfPresent("teamCount", TeamCount);
+            writer.WriteIfPresent("seatsPerTeam", SeatsPerTeam);
+            if (Metadata != null) writer.Write("metadata", Metadata);
+            if (IncludeInProgress) writer.Write("includeInProgress", true);
         }
     }
 

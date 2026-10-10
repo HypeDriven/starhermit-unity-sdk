@@ -21,6 +21,33 @@ namespace Starhermit.Tests
         private Func<RecordedRequest, FakeResponse>? _fallback;
         private Func<RecordedRequest, Task<FakeResponse>>? _asyncFallback;
         private readonly object _gate = new object();
+        private int _ticketsIssued;
+
+        /// <summary>Creates a transport that issues connection tickets the way a current deployment does.</summary>
+        public FakeTransport()
+        {
+            ConnectionTickets = _ => new FakeResponse(
+                200,
+                "{\"ticket\":\"ticket-" + Interlocked.Increment(ref _ticketsIssued) + "\",\"expiresIn\":30}");
+        }
+
+        /// <summary>
+        /// Answers <c>POST realtime/connection-tickets</c> ahead of the script, so a socket test does not
+        /// have to script the ticket every handshake fetches. The default issues <c>ticket-1</c>,
+        /// <c>ticket-2</c>, ... Set to null to route those requests through the script like any other.
+        /// </summary>
+        public Func<RecordedRequest, FakeResponse>? ConnectionTickets { get; set; }
+
+        /// <summary>Makes the ticket endpoint answer as a deployment that predates tickets: <c>404</c>.</summary>
+        /// <returns>This transport, for chaining.</returns>
+        public FakeTransport WithoutConnectionTickets()
+        {
+            ConnectionTickets = _ => new FakeResponse(404, "{\"error\":\"Not Found\"}");
+            return this;
+        }
+
+        /// <summary>The ticket requests the pipeline sent, in order.</summary>
+        public List<RecordedRequest> TicketRequests { get; } = new List<RecordedRequest>();
 
         /// <summary>Every request the pipeline sent, in order.</summary>
         public List<RecordedRequest> Requests { get; } = new List<RecordedRequest>();
@@ -84,7 +111,16 @@ namespace Starhermit.Tests
                 // Requests arrive from several threads in the concurrency tests; recording them has to
                 // be safe or the test fails for reasons that have nothing to do with the SDK.
                 Requests.Add(recorded);
-                responder = _scripted.Count > 0 ? _scripted.Dequeue() : _fallback;
+                if (ConnectionTickets != null && IsTicketRequest(recorded))
+                {
+                    TicketRequests.Add(recorded);
+                    responder = ConnectionTickets;
+                }
+                else
+                {
+                    responder = _scripted.Count > 0 ? _scripted.Dequeue() : _fallback;
+                }
+
                 asyncResponder = responder == null ? _asyncFallback : null;
             }
 
@@ -113,6 +149,9 @@ namespace Starhermit.Tests
 
         /// <inheritdoc />
         public void Dispose() => IsDisposed = true;
+
+        private static bool IsTicketRequest(RecordedRequest request) =>
+            request.Method == "POST" && request.Path.EndsWith("/realtime/connection-tickets", StringComparison.Ordinal);
     }
 
     /// <summary>One request as the fake transport saw it.</summary>

@@ -378,6 +378,50 @@ namespace Starhermit.Tests
         }
 
         [Test]
+        public async Task DownloadIfChanged_TheHeldVersion_IsNotModifiedWithoutABody()
+        {
+            var transport = new FakeTransport()
+                .Enqueue(_ => new FakeResponse(304, null, new Dictionary<string, string> { ["ETag"] = "\"5f3a\"" }));
+            var logger = new RecordingLogger();
+            using var client = await TestHarness.SignedInAsync(transport, logger: logger);
+
+            var result = await client.CloudSaves.DownloadIfChangedAsync("chess", "5f3a");
+
+            Assert.AreEqual("\"5f3a\"", transport.Last.Header("If-None-Match"), "bare text is quoted, as the API compares entity tags");
+            Assert.IsTrue(result.NotModified);
+            Assert.IsNull(result.Archive);
+            Assert.AreEqual("\"5f3a\"", result.ETag);
+            Assert.IsTrue(logger.NeverLogged("Error:"), "a 304 the caller asked for is an answer, not a failure");
+        }
+
+        [Test]
+        public async Task DownloadIfChanged_ANewerVersion_ReturnsTheBytesAndTheirVersion()
+        {
+            var transport = new FakeTransport()
+                .Enqueue(_ => new FakeResponse(200, "new-zip", new Dictionary<string, string> { ["ETag"] = "\"6000\"" }))
+                .Enqueue(_ => new FakeResponse(200, "any-zip", new Dictionary<string, string> { ["ETag"] = "\"6000\"" }));
+            using var client = await TestHarness.SignedInAsync(transport);
+
+            var result = await client.CloudSaves.DownloadIfChangedAsync("chess", "\"5f3a\"");
+            Assert.IsFalse(result.NotModified);
+            Assert.AreEqual("new-zip", System.Text.Encoding.UTF8.GetString(result.Archive!));
+            Assert.AreEqual("\"6000\"", result.ETag);
+
+            await client.CloudSaves.DownloadIfChangedAsync("chess", null);
+            Assert.IsNull(transport.Last.Header("If-None-Match"), "holding nothing downloads unconditionally");
+        }
+
+        [Test]
+        public async Task NotModified_IsStillAFailureForARequestThatSentNoValidator()
+        {
+            var transport = new FakeTransport().Enqueue(_ => new FakeResponse(304));
+            using var client = await TestHarness.SignedInAsync(transport);
+
+            var failure = Assert.CatchAsync<StarhermitApiException>(() => client.CloudSaves.DownloadVersionAsync("chess"));
+            Assert.AreEqual(304, failure!.Status, "an unconditional download cannot use a 304, so it must not read as an empty save");
+        }
+
+        [Test]
         public void SaveCondition_ForVersion_FollowsWhatWasRead()
         {
             Assert.AreEqual("*", StarhermitSaveCondition.ForVersion(Info("{\"exists\":false}")).IfNoneMatchHeader);

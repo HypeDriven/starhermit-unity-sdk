@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -31,19 +32,114 @@ namespace Starhermit.Tests
         }
 
         [Test]
-        public async Task Connect_OffersTheTokenAsBothAHeaderAndAQueryParameter()
+        public async Task Connect_PresentsATicketBoughtWithTheSessionAndNoToken()
         {
             var sockets = new FakeSocketFactory();
-            using var client = await TestHarness.SignedInAsync(new FakeTransport(), socketFactory: sockets);
+            var transport = new FakeTransport();
+            using var client = await TestHarness.SignedInAsync(transport, socketFactory: sockets);
 
             var chat = client.CreateChatConnection();
             await chat.ConnectAsync();
 
+            var query = sockets.Last.ConnectedUri!.Query;
+            Assert.AreEqual(1, transport.TicketRequests.Count, "one ticket per handshake");
+            Assert.AreEqual(client.Session!.AccessToken, transport.TicketRequests[0].BearerToken, "the ticket is bought with the session");
+            StringAssert.Contains("ticket=ticket-1", query);
+            StringAssert.DoesNotContain("access_token", query, "the token stays out of the URL");
+            StringAssert.DoesNotContain(client.Session.AccessToken, sockets.Last.ConnectedUri.ToString());
+            Assert.AreEqual(0, sockets.Last.ConnectHeaders.Count, "the ticket is the handshake's only credential");
+        }
+
+        [Test]
+        public async Task Reconnect_FetchesAFreshTicketForEveryHandshake()
+        {
+            var sockets = new FakeSocketFactory();
+            var transport = new FakeTransport().Always(_ => new FakeResponse(200, "{\"id\":\"" + Guid.NewGuid() + "\"}"));
+            using var client = await TestHarness.SignedInAsync(transport, socketFactory: sockets);
+            var relay = client.CreateRelayConnection(Guid.NewGuid(), Guid.NewGuid());
+            await relay.ConnectAsync();
+
+            sockets.Last.PushClose(StarhermitCloseCodes.Abnormal, "dropped");
+
+            await TestHarness.WaitForAsync(() => sockets.Created.Count == 2, "a second socket to be opened");
+            StringAssert.Contains("ticket=ticket-1", sockets.Created[0].ConnectedUri!.Query);
+            StringAssert.Contains("ticket=ticket-2", sockets.Created[1].ConnectedUri!.Query,
+                "a ticket is spent by the handshake that presents it, so a reconnect needs its own");
+            Assert.AreEqual(2, transport.TicketRequests.Count);
+        }
+
+        [Test]
+        public async Task DeploymentWithoutTickets_FallsBackToTheToken()
+        {
+            var sockets = new FakeSocketFactory();
+            var transport = new FakeTransport().WithoutConnectionTickets();
+            using var client = await TestHarness.SignedInAsync(transport, socketFactory: sockets);
+
+            var chat = client.CreateChatConnection();
+            await chat.ConnectAsync();
+
+            Assert.AreEqual(StarhermitConnectionState.Connected, chat.State);
             var authorization = sockets.Last.ConnectHeaders[0];
             Assert.AreEqual("Authorization", authorization.Key);
-            StringAssert.StartsWith("Bearer ", authorization.Value);
+            Assert.AreEqual("Bearer " + client.Session!.AccessToken, authorization.Value);
             StringAssert.Contains("access_token=", sockets.Last.ConnectedUri!.Query,
-                "browsers cannot set a handshake header, so the token also rides in the query");
+                "browsers cannot set a handshake header, so an older deployment reads the token from the query");
+            StringAssert.DoesNotContain("ticket=", sockets.Last.ConnectedUri.Query);
+        }
+
+        [Test]
+        public async Task TicketRefusal_IsReportedRatherThanFallingBackToTheToken()
+        {
+            var sockets = new FakeSocketFactory();
+            var transport = new FakeTransport();
+            var issue = transport.ConnectionTickets;
+            transport.ConnectionTickets = _ => new FakeResponse(403, "{\"error\":\"This token is scoped to the game 'other'.\"}");
+            using var client = await TestHarness.SignedInAsync(transport, socketFactory: sockets);
+            var chat = client.CreateChatConnection();
+
+            Assert.ThrowsAsync<StarhermitAuthorizationException>(() => chat.ConnectAsync());
+            Assert.AreEqual(0, sockets.Created.Count, "only a deployment without tickets earns the token in the URL");
+            Assert.AreEqual(StarhermitConnectionState.Faulted, chat.State);
+
+            // A failed ticket fetch must not leave the connection reading as Connecting, where every
+            // later ConnectAsync would return without connecting.
+            transport.ConnectionTickets = issue;
+            await chat.ConnectAsync();
+            Assert.AreEqual(StarhermitConnectionState.Connected, chat.State);
+        }
+
+        [Test]
+        public async Task LaunchScopedSocket_BuysItsTicketWithTheLaunchToken()
+        {
+            var sockets = new FakeSocketFactory();
+            var transport = new FakeTransport().EnqueueJson(200, "{\"token\":\"launch-token-xyz\",\"expiresInSeconds\":3600}");
+            using var client = await TestHarness.SignedInAsync(transport, socketFactory: sockets);
+            await client.Games.ForSlug("chess").AcquireLaunchTokenAsync();
+
+            var room = client.CreateRealtimeConnection(Guid.NewGuid(), "chess", useLaunchToken: true);
+            await room.ConnectAsync();
+
+            Assert.AreEqual("launch-token-xyz", transport.TicketRequests.Single().BearerToken,
+                "a ticket copies the claims of the token that bought it, so it must be the launch token");
+            Assert.IsNull(transport.TicketRequests.Single().Header(StarhermitHeaders.GameSlug), "the slug header never leaves the process");
+            StringAssert.Contains("ticket=ticket-1", sockets.Last.ConnectedUri!.Query);
+            StringAssert.DoesNotContain("launch-token-xyz", sockets.Last.ConnectedUri.ToString());
+        }
+
+        [Test]
+        public async Task Tickets_AreNeverLogged()
+        {
+            var sockets = new FakeSocketFactory();
+            var logger = new RecordingLogger();
+            using var client = await TestHarness.SignedInAsync(new FakeTransport(), socketFactory: sockets, logger: logger);
+
+            var chat = client.CreateChatConnection();
+            await chat.ConnectAsync();
+            await chat.CloseAsync();
+
+            Assert.IsNotEmpty(logger.Messages, "the connection logged its lifecycle at Debug");
+            Assert.IsTrue(logger.NeverLogged("ticket-1"));
+            Assert.IsTrue(logger.NeverLogged(client.Session!.AccessToken));
         }
 
         [Test]

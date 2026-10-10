@@ -32,6 +32,14 @@ A client therefore cannot sign the bytes it received; it has to rebuild the serv
 reusing the timestamp strings verbatim, and hope neither the property order nor the serializer's date
 format ever changes.
 
+The coupling reaches the serializer's *escaping* too, which the first live sign-in tests found: the
+default `JavaScriptEncoder` writes `+` (and `<`, `>`, `&`, `'`, `` ` ``, anything non-ASCII) as
+`\u002B`-style escapes in string members, while the response a client parses has already decoded them.
+The nonce is base64, so about three challenges in ten contain a `+`, and a client that writes the
+rebuilt payload with ordinary JSON escaping fails those sign-ins at random with `401 Invalid signature`.
+The SDK now mirrors the encoder (`StarhermitChallenge.CanonicalPayload`); every other client has to
+discover the same thing.
+
 Suggested fix: return the exact bytes to sign - base64 - alongside the payload, and verify against
 those. It removes an invisible coupling to one server's serializer settings.
 

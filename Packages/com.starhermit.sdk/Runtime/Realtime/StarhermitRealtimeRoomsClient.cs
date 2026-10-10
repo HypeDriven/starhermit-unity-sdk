@@ -14,6 +14,10 @@ namespace Starhermit
         }
 
         /// <summary>Creates a room.</summary>
+        /// <remarks>
+        /// The overload taking a <see cref="StarhermitRoomSettings"/> also names, lists, caps the AI
+        /// backfill and enables join-in-progress.
+        /// </remarks>
         /// <param name="gameSlug">Game the room is for; defaults to the configured slug.</param>
         /// <param name="teamCount">How many teams.</param>
         /// <param name="seatsPerTeam">How many seats per team.</param>
@@ -29,17 +33,36 @@ namespace Starhermit
             int? backfillAfterSeconds = null,
             int aiPlayers = 0,
             JsonValue? metadata = null,
+            CancellationToken cancellationToken = default) =>
+            CreateRoomAsync(
+                gameSlug,
+                new StarhermitRoomSettings
+                {
+                    TeamCount = teamCount,
+                    SeatsPerTeam = seatsPerTeam,
+                    BackfillAfterSeconds = backfillAfterSeconds,
+                    AiPlayers = aiPlayers,
+                    Metadata = metadata
+                },
+                cancellationToken);
+
+        /// <summary>Creates a room with its name, visibility, backfill cap and join-in-progress set.</summary>
+        /// <param name="gameSlug">Game the room is for; null for the configured slug. A launch-scoped caller's game is fixed by its token.</param>
+        /// <param name="settings">Layout, discovery and backfill settings.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The new room, carrying its join code.</returns>
+        /// <exception cref="StarhermitConflictException">The caller already holds a seat in another active room.</exception>
+        public Task<StarhermitRoom> CreateRoomAsync(
+            string? gameSlug,
+            StarhermitRoomSettings settings,
             CancellationToken cancellationToken = default)
         {
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
             var slug = gameSlug ?? Options.GameSlug;
             var request = WithBody(Post("realtime/rooms"), writer =>
             {
                 writer.WriteIfPresent("gameSlug", slug);
-                writer.Write("teamCount", teamCount);
-                writer.Write("seatsPerTeam", seatsPerTeam);
-                writer.WriteIfPresent("backfillAfterSeconds", backfillAfterSeconds);
-                writer.Write("aiPlayers", aiPlayers);
-                if (metadata != null) writer.Write("metadata", metadata);
+                settings.Write(writer);
             });
 
             return SendAsync(request, "realtime.createRoom", StarhermitRoom.Read, cancellationToken);
@@ -93,22 +116,49 @@ namespace Starhermit
                 cancellationToken);
 
         /// <summary>
-        /// Joins any room with space, creating one when none is available.
+        /// Joins the oldest open room with a seat.
         /// </summary>
         /// <param name="gameSlug">Game to quick-join; defaults to the configured slug.</param>
         /// <param name="seats">How many adjacent seats to claim. The deployment currently accepts one.</param>
         /// <param name="cancellationToken">Cancels the request.</param>
         /// <returns>The room the caller landed in.</returns>
+        /// <exception cref="StarhermitNotFoundException">No open room has a seat.</exception>
         public Task<StarhermitRoom> QuickJoinAsync(
             string? gameSlug = null,
             int seats = 1,
+            CancellationToken cancellationToken = default) =>
+            SendQuickJoinAsync(gameSlug, seats, null, cancellationToken);
+
+        /// <summary>
+        /// Joins the oldest open room with a seat that matches the filter: its team layout, a subset
+        /// of its metadata, and - when asked - running matches that take players mid-match.
+        /// </summary>
+        /// <param name="gameSlug">Game to quick-join; null for the configured slug.</param>
+        /// <param name="filter">What the room must match. Every condition given must hold.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>The room the caller landed in.</returns>
+        /// <exception cref="StarhermitNotFoundException">No open room with a seat matches; the message says the filter missed.</exception>
+        public Task<StarhermitRoom> QuickJoinAsync(
+            string? gameSlug,
+            StarhermitQuickJoinFilter filter,
             CancellationToken cancellationToken = default)
+        {
+            if (filter == null) throw new ArgumentNullException(nameof(filter));
+            return SendQuickJoinAsync(gameSlug, 1, filter, cancellationToken);
+        }
+
+        private Task<StarhermitRoom> SendQuickJoinAsync(
+            string? gameSlug,
+            int seats,
+            StarhermitQuickJoinFilter? filter,
+            CancellationToken cancellationToken)
         {
             var slug = gameSlug ?? Options.GameSlug;
             var request = WithBody(Post("realtime/rooms/quick-join"), writer =>
             {
                 writer.WriteIfPresent("gameSlug", slug);
                 writer.Write("seats", seats);
+                filter?.Write(writer);
             });
 
             return SendAsync(request, "realtime.quickJoin", StarhermitRoom.Read, cancellationToken);

@@ -156,6 +156,7 @@ namespace Starhermit.Tests
                 .EnqueueJson(200, "{\"ticket\":\"account-ticket\",\"expiresIn\":30}")
                 .EnqueueJson(200, "{\"token\":\"launch-token-xyz\",\"expiresInSeconds\":900}")
                 .EnqueueJson(200, "{\"ticket\":\"game-ticket\",\"expiresIn\":30}");
+            transport.ConnectionTickets = null;
             using var client = await TestHarness.SignedInAsync(transport);
 
             var accountTicket = await client.Auth.IssueConnectionTicketAsync();
@@ -222,6 +223,84 @@ namespace Starhermit.Tests
             await client.RealtimeRooms.MatchmakeRoomAsync(OtherId, new[] { "2v2" });
             Assert.AreEqual($"/api/v1/realtime/rooms/{OtherId}/matchmake", transport.Last.Path);
             Assert.AreEqual("?queues=2v2", transport.Last.Query);
+        }
+
+        [Test]
+        public async Task CreateRoom_SendsDiscoveryBackfillAndJoinInProgressSettings()
+        {
+            var room = "{\"id\":\"" + OtherId + "\",\"gameSlug\":\"brawl\",\"status\":\"Lobby\",\"name\":\"Fri night\",\"joinCode\":\"K7QX2M\",\"isVisible\":true,\"participants\":[]}";
+            var transport = new FakeTransport().EnqueueJson(200, room).EnqueueJson(200, room);
+            using var client = await TestHarness.SignedInAsync(transport);
+
+            var created = await client.RealtimeRooms.CreateRoomAsync("brawl", new StarhermitRoomSettings
+            {
+                TeamCount = 2,
+                SeatsPerTeam = 3,
+                BackfillAfterSeconds = 20,
+                AiPlayers = 1,
+                BackfillAiPlayers = 0,
+                JoinInProgress = true,
+                Name = "Fri night",
+                IsVisible = true,
+                Metadata = JsonParser.Parse("{\"map\":\"dock\"}")
+            });
+
+            Assert.AreEqual("/api/v1/realtime/rooms", transport.Last.Path);
+            var sent = JsonParser.Parse(transport.Last.Body!);
+            Assert.AreEqual("brawl", sent["gameSlug"].AsString());
+            Assert.AreEqual(3, sent["seatsPerTeam"].AsInt32());
+            Assert.AreEqual(20, sent["backfillAfterSeconds"].AsInt32());
+            Assert.AreEqual(1, sent["aiPlayers"].AsInt32());
+            Assert.AreEqual(0, sent["backfillAiPlayers"].AsInt32(), "0 is a cap, distinct from leaving it unset");
+            Assert.IsTrue(sent["joinInProgress"].AsBoolean());
+            Assert.AreEqual("Fri night", sent["name"].AsString());
+            Assert.IsTrue(sent["isVisible"].AsBoolean());
+            Assert.AreEqual("dock", sent["metadata"]["map"].AsString());
+            Assert.AreEqual("K7QX2M", created.JoinCode);
+
+            // The original signature still sends what it always did, and nothing it never sent.
+            await client.RealtimeRooms.CreateRoomAsync("brawl", teamCount: 1, seatsPerTeam: 4);
+            var legacy = JsonParser.Parse(transport.Last.Body!);
+            Assert.AreEqual(1, legacy["teamCount"].AsInt32());
+            Assert.AreEqual(4, legacy["seatsPerTeam"].AsInt32());
+            Assert.AreEqual(0, legacy["aiPlayers"].AsInt32());
+            foreach (var unset in new[] { "backfillAfterSeconds", "backfillAiPlayers", "joinInProgress", "name", "isVisible", "metadata" })
+                Assert.IsTrue(legacy[unset].IsMissing, unset + " is left to the deployment's default");
+        }
+
+        [Test]
+        public async Task QuickJoin_SendsItsFilter_AndAMissIsATypedNotFound()
+        {
+            var room = "{\"id\":\"" + OtherId + "\",\"gameSlug\":\"brawl\",\"status\":\"Playing\",\"participants\":[]}";
+            var transport = new FakeTransport()
+                .EnqueueJson(200, room)
+                .EnqueueJson(404, "{\"error\":\"No open room matches the filter.\"}")
+                .EnqueueJson(200, room);
+            using var client = await TestHarness.SignedInAsync(transport);
+            var filter = new StarhermitQuickJoinFilter
+            {
+                TeamCount = 2,
+                SeatsPerTeam = 2,
+                Metadata = JsonParser.Parse("{\"map\":\"dock\",\"mode\":\"ranked\"}"),
+                IncludeInProgress = true
+            };
+
+            await client.RealtimeRooms.QuickJoinAsync("brawl", filter);
+            var sent = JsonParser.Parse(transport.Last.Body!);
+            Assert.AreEqual("/api/v1/realtime/rooms/quick-join", transport.Last.Path);
+            Assert.AreEqual(1, sent["seats"].AsInt32());
+            Assert.AreEqual(2, sent["teamCount"].AsInt32());
+            Assert.AreEqual(2, sent["seatsPerTeam"].AsInt32());
+            Assert.AreEqual("ranked", sent["metadata"]["mode"].AsString());
+            Assert.IsTrue(sent["includeInProgress"].AsBoolean());
+
+            var miss = Assert.ThrowsAsync<StarhermitNotFoundException>(() => client.RealtimeRooms.QuickJoinAsync("brawl", filter));
+            StringAssert.Contains("filter", miss!.ServerMessage);
+
+            await client.RealtimeRooms.QuickJoinAsync("brawl");
+            var unfiltered = JsonParser.Parse(transport.Last.Body!);
+            foreach (var unset in new[] { "teamCount", "seatsPerTeam", "metadata", "includeInProgress" })
+                Assert.IsTrue(unfiltered[unset].IsMissing, "no filter is the old behaviour: " + unset);
         }
 
         [Test]

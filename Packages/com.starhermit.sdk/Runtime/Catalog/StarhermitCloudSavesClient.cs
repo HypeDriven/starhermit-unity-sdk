@@ -70,6 +70,39 @@ namespace Starhermit
         }
 
         /// <summary>
+        /// Downloads the stored save only if it is not the version the caller already holds. When it
+        /// is, the deployment answers <c>304</c> and no bytes are transferred.
+        /// </summary>
+        /// <remarks>
+        /// One request either way, so a game that keeps the archive it last loaded can check for a
+        /// newer save at launch without reading the metadata first or downloading what it has. The
+        /// version is compared exactly: pass the <see cref="StarhermitCloudSaveArchive.ETag"/> or
+        /// <see cref="StarhermitCloudSaveInfo.ETag"/> the API returned, not one built locally.
+        /// </remarks>
+        /// <param name="gameKey">The uniform game key.</param>
+        /// <param name="heldETag">The version the caller holds; null or empty downloads unconditionally.</param>
+        /// <param name="cancellationToken">Cancels the request.</param>
+        /// <returns>
+        /// <see cref="StarhermitCloudSaveDownload.NotModified"/> with no archive when the stored save is
+        /// still <paramref name="heldETag"/>; otherwise the archive and its version.
+        /// </returns>
+        /// <exception cref="StarhermitNotFoundException">No save is stored for this key.</exception>
+        public async Task<StarhermitCloudSaveDownload> DownloadIfChangedAsync(
+            string gameKey,
+            string? heldETag,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Get($"me/cloud-saves/{Escape(gameKey)}")
+                .Expecting(StarhermitResponseKind.Bytes)
+                .IfNoneMatch(string.IsNullOrWhiteSpace(heldETag) ? null : StarhermitSaveCondition.Quote(heldETag!));
+            using var response = await Rest.SendAsync(request, "cloudSaves.downloadIfChanged", cancellationToken).ConfigureAwait(false);
+            var eTag = response.Header("ETag");
+            return response.Status == 304
+                ? new StarhermitCloudSaveDownload(null, eTag ?? heldETag)
+                : new StarhermitCloudSaveDownload(response.Body ?? Array.Empty<byte>(), eTag);
+        }
+
+        /// <summary>
         /// Downloads the save if there is one, and reports absence as null rather than as an error.
         /// </summary>
         /// <param name="gameKey">The uniform game key.</param>
@@ -207,6 +240,25 @@ namespace Starhermit
         public string? ETag { get; }
     }
 
+    /// <summary>The answer to a conditional download: the archive, or word that the caller already has it.</summary>
+    public sealed class StarhermitCloudSaveDownload
+    {
+        internal StarhermitCloudSaveDownload(byte[]? archive, string? eTag)
+        {
+            Archive = archive;
+            ETag = eTag;
+        }
+
+        /// <summary>True when the stored save is the version the caller holds; <see cref="Archive"/> is then null.</summary>
+        public bool NotModified => Archive == null;
+
+        /// <summary>The archive bytes, or null when <see cref="NotModified"/>.</summary>
+        public byte[]? Archive { get; }
+
+        /// <summary>The stored save's version: the downloaded one, or the one the caller already holds.</summary>
+        public string? ETag { get; }
+    }
+
     /// <summary>
     /// Which stored save a cloud-save upload may replace - sent as <c>If-Match</c> or
     /// <c>If-None-Match</c>, and refused with <see cref="StarhermitPreconditionFailedException"/>
@@ -236,10 +288,16 @@ namespace Starhermit
         public static StarhermitSaveCondition IfMatch(string eTag)
         {
             if (string.IsNullOrWhiteSpace(eTag)) throw new ArgumentException("A version is required.", nameof(eTag));
+            return new StarhermitSaveCondition(Quote(eTag), null);
+        }
+
+        /// <summary>Puts a version in entity-tag form, quoting bare text; <c>*</c> and quoted or weak tags pass through.</summary>
+        internal static string Quote(string eTag)
+        {
             var tag = eTag.Trim();
             if (tag != "*" && !tag.StartsWith("\"", StringComparison.Ordinal) && !tag.StartsWith("W/", StringComparison.Ordinal))
                 tag = "\"" + tag + "\"";
-            return new StarhermitSaveCondition(tag, null);
+            return tag;
         }
 
         /// <summary>

@@ -156,7 +156,9 @@ namespace Starhermit
 
                     var requestId = ReadRequestId(response);
 
-                    if (response.IsSuccess)
+                    // A 304 is an answer only to a request that sent a validator; anywhere else it is a
+                    // response the request cannot use, and is reported like any other.
+                    if (response.IsSuccess || (response.Status == 304 && request.AcceptsNotModified))
                     {
                         _log.Log(StarhermitLogLevel.Debug, $"{request.Method} {safeUri} -> {response.Status}");
                         RecordTelemetry(operationId, started.Elapsed, response.Status / 100, retries, requestId, StarhermitOperationOutcome.Success);

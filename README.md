@@ -60,7 +60,8 @@ Eight samples ship with the package, from sign-in to a dedicated server: see `Sa
   could survive. A `401` buys exactly one coordinated refresh and one replay. A transport failure is
   never dressed up as an API response.
 - **Nothing leaks.** Redaction is structural, by name, at every depth - so a credential this SDK has
-  never seen is still removed from logs, exceptions and telemetry.
+  never seen is still removed from logs, exceptions and telemetry. A socket's URL carries a single-use
+  connection ticket fetched for that handshake, never the session token.
 
 ## Building and testing without Unity
 
@@ -80,12 +81,19 @@ against small API stubs, so that half of the package is type-checked in CI too.
 The suite runs on NUnit, which is also Unity Test Framework's engine: the same files under
 `Tests/Runtime` execute as EditMode tests inside the editor.
 
-Five of the 178 tests read a real deployment instead of a fixture, so a contract drift on the server shows
-up here rather than in a player's bug report. They are skipped unless you point them at one:
+Ten of the 194 tests read a real deployment instead of a fixture, so a contract drift on the server shows
+up here rather than in a player's bug report. They are skipped unless you point them at one. Five read
+the anonymous surface; the other five sign in, which they do the way a player does - registering a key
+and redeeming the link the deployment emails - so they also need the directory that mail lands in:
 
 ```bash
 STARHERMIT_TEST_BASE_URL=http://starhermit.test:5050/api/v1/ dotnet test build/tests/Starhermit.Tests.csproj
+STARHERMIT_TEST_BASE_URL=... STARHERMIT_TEST_MAILBOX=/path/to/mail dotnet test build/tests/Starhermit.Tests.csproj
 ```
+
+`./tools/live-test.sh` does all of it against a throwaway backend built from the backend checkout -
+Postgres and Redis in Docker, the Api, and `tools/smtp_sink.py` as its mail server - and removes it
+afterwards.
 
 ## Contract maintenance
 

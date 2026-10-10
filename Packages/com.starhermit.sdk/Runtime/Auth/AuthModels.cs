@@ -160,19 +160,63 @@ namespace Starhermit
         {
             // Property order and names mirror Platform.Application.Services.ChallengePayload, because
             // that class is what the server serialises when it verifies the signature. Timestamps are
-            // copied through as their received text rather than reformatted.
+            // copied through as their received text rather than reformatted: System.Text.Json writes
+            // a DateTimeOffset the same way into the response and into the bytes it verifies.
+            //
+            // The string members are escaped the way System.Text.Json's default encoder escapes them,
+            // not the way JSON requires. The nonce is base64, so about three challenges in ten carry
+            // a '+', which the server's bytes hold as \u002B; signing a literal '+' failed exactly those
+            // sign-ins, at random.
             var builder = new StringBuilder(256);
-            var writer = new JsonWriter(builder);
-            writer.WriteStartObject();
-            writer.Write("ChallengeId", payload["challengeId"].AsStringOrNull() ?? string.Empty);
-            writer.Write("Fingerprint", payload["fingerprint"].AsStringOrNull() ?? string.Empty);
-            writer.Write("Issuer", payload["issuer"].AsStringOrNull() ?? string.Empty);
-            writer.Write("Audience", payload["audience"].AsStringOrNull() ?? string.Empty);
-            writer.Write("Expiry", payload["expiry"].AsStringOrNull() ?? string.Empty);
-            writer.Write("Nonce", payload["nonce"].AsStringOrNull() ?? string.Empty);
-            writer.Write("ClientTimestamp", payload["clientTimestamp"].AsStringOrNull() ?? string.Empty);
-            writer.WriteEndObject();
+            builder.Append('{');
+            AppendRaw(builder, "ChallengeId", payload["challengeId"].AsStringOrNull());
+            builder.Append(',');
+            AppendEscaped(builder, "Fingerprint", payload["fingerprint"].AsStringOrNull());
+            builder.Append(',');
+            AppendEscaped(builder, "Issuer", payload["issuer"].AsStringOrNull());
+            builder.Append(',');
+            AppendEscaped(builder, "Audience", payload["audience"].AsStringOrNull());
+            builder.Append(',');
+            AppendRaw(builder, "Expiry", payload["expiry"].AsStringOrNull());
+            builder.Append(',');
+            AppendEscaped(builder, "Nonce", payload["nonce"].AsStringOrNull());
+            builder.Append(',');
+            AppendRaw(builder, "ClientTimestamp", payload["clientTimestamp"].AsStringOrNull());
+            builder.Append('}');
             return Encoding.UTF8.GetBytes(builder.ToString());
+        }
+
+        /// <summary>A Guid or DateTimeOffset member: System.Text.Json formats these without escaping.</summary>
+        private static void AppendRaw(StringBuilder builder, string name, string? value) =>
+            builder.Append('"').Append(name).Append("\":\"").Append(value ?? string.Empty).Append('"');
+
+        /// <summary>A string member, escaped as <c>JavaScriptEncoder.Default</c> escapes it.</summary>
+        private static void AppendEscaped(StringBuilder builder, string name, string? value)
+        {
+            builder.Append('"').Append(name).Append("\":\"");
+            foreach (var c in value ?? string.Empty)
+            {
+                switch (c)
+                {
+                    case '\\': builder.Append("\\\\"); break;
+                    case '\b': builder.Append("\\b"); break;
+                    case '\t': builder.Append("\\t"); break;
+                    case '\n': builder.Append("\\n"); break;
+                    case '\f': builder.Append("\\f"); break;
+                    case '\r': builder.Append("\\r"); break;
+                    default:
+                        // HTML-sensitive characters, controls and everything outside Basic Latin are
+                        // written as \uXXXX with upper-case hex - surrogate pairs one half at a time.
+                        if (c < 0x20 || c > 0x7E || c == '"' || c == '&' || c == '\'' || c == '+' ||
+                            c == '<' || c == '>' || c == '`')
+                            builder.Append("\\u").Append(((int)c).ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
+                        else
+                            builder.Append(c);
+                        break;
+                }
+            }
+
+            builder.Append('"');
         }
     }
 

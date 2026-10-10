@@ -7,7 +7,9 @@ additive API and endpoint coverage is a minor release, a source-breaking change 
 ## [Unreleased]
 
 Brings the SDK level with the backend's current surface: 45 operations added, 3 classified, 0
-unmapped (227 of 243 mapped, 6 socket routes, 10 classified).
+unmapped (227 of 243 mapped, 6 socket routes, 10 classified). Sockets then move onto connection
+tickets, rooms take their newer settings at creation, cloud saves gain a conditional download, and the
+live contract suite runs signed in.
 
 ### Added
 
@@ -17,7 +19,7 @@ unmapped (227 of 243 mapped, 6 socket routes, 10 classified).
   `GetMyReportsAsync`. `Me.GetTermsAsync` (anonymous) and `Me.RevokeCurrentPublicKeyAsync`.
   `Auth.GetOAuthProvidersAsync` (anonymous). `Voice.SetServerMuteAsync` for a room's host.
 - **Connection tickets.** `Auth.IssueConnectionTicketAsync` and, carrying a launch token's authority,
-  `StarhermitGameClient.IssueConnectionTicketAsync`.
+  `StarhermitGameClient.IssueConnectionTicketAsync` - and every socket now uses them (see Changed).
 - **Rooms.** `BrowseRoomsAsync`, `JoinByCodeAsync`, `GetJoinedRoomsAsync`, `UpdateRoomAsync`
   (compare-and-swap on `Revision`) and `MatchmakeRoomAsync`. `StarhermitRoom` gains `Name`,
   `JoinCode`, `IsVisible` and `Revision`; its config gains `BackfillAiPlayers` and `JoinInProgress`.
@@ -27,9 +29,26 @@ unmapped (227 of 243 mapped, 6 socket routes, 10 classified).
   leaderboard CRUD, `ResetPlayerEloAsync`, player reports (paged list and enumeration, detail,
   attachment download, status, delete) and server container output (`GetContainerLogsAsync`,
   `GetContainerCrashesAsync`, `GetContainerCrashAsync`).
+- **Room settings at creation and quick-join filters.** `CreateRoomAsync(gameSlug, StarhermitRoomSettings)`
+  sets a name, browser visibility (`IsVisible`), the AI backfill cap (`BackfillAiPlayers`, where `0`
+  starts with empty seats) and `JoinInProgress` alongside the layout, AI seats, backfill delay and
+  metadata. `QuickJoinAsync(gameSlug, StarhermitQuickJoinFilter)` takes the deployment's filters - team
+  count, seats per team, a metadata subset, and `IncludeInProgress` - and a miss is a
+  `StarhermitNotFoundException`. The original signatures are unchanged and send what they always sent.
 - **Cloud-save versions.** `StarhermitCloudSaveInfo.ETag`, `DownloadVersionAsync`, and an
   `UploadAsync` overload taking a `StarhermitSaveCondition` (`IfMatch`, `IfNoSaveExists`,
   `IfAnySaveExists`, `ForVersion`).
+- **Conditional downloads.** `CloudSaves.DownloadIfChangedAsync(key, heldETag)` sends `If-None-Match`
+  and returns `StarhermitCloudSaveDownload.NotModified` with no archive on a `304`, so checking for a
+  newer save costs one request and no bytes. `StarhermitRequest.IfNoneMatch` (and `AcceptsNotModified`)
+  lets a `Raw` request do the same; the pipeline treats a `304` as an answer only for a request that
+  sent a validator.
+- **Signed-in live contract tests.** Five more live tests run when `STARHERMIT_TEST_MAILBOX` names the
+  directory a deployment's mail lands in: they register an account through the emailed link, as a
+  player does, and check public-key sign-in, ticketed handshakes (one per handshake, a replay refused,
+  a launch token's ticket fenced to its game), room settings with filtered quick-join across two
+  accounts, and conditional cloud-save downloads. `tools/live-test.sh` runs the whole live suite
+  against a throwaway backend built from the checkout, with `tools/smtp_sink.py` as its mail server.
 - **Limit refusals.** `StarhermitPreconditionFailedException` (`412`, with `CurrentETag`) and
   `StarhermitQuotaExceededException` (`413`, `507`). Every API exception exposes `Limit`, `Used` and
   `LimitKey` from the refusal body.
@@ -40,6 +59,12 @@ unmapped (227 of 243 mapped, 6 socket routes, 10 classified).
 
 ### Changed
 
+- **Socket handshakes present a connection ticket, not the access token.** Every connect and every
+  reconnect fetches a fresh single-use ticket immediately before the handshake and passes it as
+  `?ticket=`, with no `Authorization` header beside it; a launch-scoped socket buys its ticket with
+  the launch token, so the ticket carries that game's scope. Only a deployment whose ticket endpoint
+  answers `404` gets the token as before (header and `?access_token=`). Dedicated-server sockets keep
+  presenting their token, which the ticket endpoint is fenced from by design.
 - **The cloud-save synchroniser no longer overwrites a save it did not compare.** Its uploads name the
   version it read (`If-Match`, or `If-None-Match: *` when there was none), and a write from another
   device in between is reported as `Conflict` - under `LocalWins` too. A download is reported only
@@ -52,6 +77,16 @@ unmapped (227 of 243 mapped, 6 socket routes, 10 classified).
 
 ### Fixed
 
+- **Public-key sign-in failed about three times in ten.** `StarhermitChallenge.CanonicalPayload`
+  escaped the challenge's strings as ordinary JSON, while the deployment verifies bytes written by
+  System.Text.Json's default encoder, which writes `+` as `\u002B`. The nonce is base64, so every
+  challenge whose nonce held a `+` answered `401 Invalid signature`. Found by the new live tests; the
+  string members are now escaped as that encoder does, and timestamps are still copied verbatim.
+- **A connect whose credential could not be obtained left the connection reading `Connecting`**, so
+  every later `ConnectAsync` returned at once without connecting. It now reads `Faulted`, and the
+  next connect tries again - which matters now that each connect first fetches a ticket.
+- `QuickJoinAsync` was documented as creating a room when none is free. It never did: the deployment
+  answers `404`, and the documentation now says so.
 - **API error codes were always `***`.** The error body is redacted before it is read, and `code` is
   redacted by name (OAuth authorization codes travel under it), so `ErrorCode` never carried an API
   code from a `code` member. It is now read back from the raw body when it has the snake_case shape of

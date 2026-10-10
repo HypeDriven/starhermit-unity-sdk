@@ -253,5 +253,26 @@ namespace Starhermit.Tests
                 canonical);
             Assert.AreEqual(TimeSpan.FromSeconds(300), challenge.ExpiresIn);
         }
+
+        [Test]
+        public void Challenge_EscapesItsStringsAsTheServersSerializerDoes()
+        {
+            // System.Text.Json's default encoder writes '+' and the HTML-sensitive characters as
+            // \uXXXX. The nonce is base64, so a '+' in it is routine - and signing it literally failed
+            // about three sign-ins in ten against a live deployment. Timestamps are not escaped: the
+            // server writes a DateTimeOffset, offset '+' included, as plain text.
+            var json = JsonParser.Parse(
+                "{\"challengeId\":\"7b8d4a52-0000-4000-8000-000000000001\",\"expiresIn\":300," +
+                "\"payload\":{\"challengeId\":\"7b8d4a52-0000-4000-8000-000000000001\",\"fingerprint\":\"fp\"," +
+                "\"issuer\":\"star<hermit>&'co`\",\"audience\":\"caf\u00e9\",\"expiry\":\"2026-08-20T12:05:00.12+00:00\"," +
+                "\"nonce\":\"a+b/c\\u002Bd==\",\"clientTimestamp\":\"2026-08-20T12:00:00+00:00\"}}");
+
+            var canonical = System.Text.Encoding.UTF8.GetString(StarhermitChallenge.Read(json).CanonicalPayload);
+
+            StringAssert.Contains("\"Nonce\":\"a\\u002Bb/c\\u002Bd==\"", canonical);
+            StringAssert.Contains("\"Issuer\":\"star\\u003Chermit\\u003E\\u0026\\u0027co\\u0060\"", canonical);
+            StringAssert.Contains("\"Audience\":\"caf\\u00E9\"", canonical);
+            StringAssert.Contains("\"Expiry\":\"2026-08-20T12:05:00.12+00:00\"", canonical);
+        }
     }
 }

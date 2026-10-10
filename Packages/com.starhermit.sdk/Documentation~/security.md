@@ -16,6 +16,16 @@ than working around it.
 `client.Games.ForSlug(slug).WithLaunchToken()` returns a client that authorises with the launch token.
 Use it in a game build: it is the credential you can afford to hand to game code.
 
+## Sockets carry a ticket, not a token
+
+A browser cannot set a handshake header, so a socket's credential goes in its URL - the part of a
+request that proxy logs, CDN cache keys and error pages keep. Every handshake the SDK makes therefore
+presents a connection ticket fetched just before it: single-use, valid for seconds, and only on `/ws`,
+bought with the session or, for a launch-scoped socket, with the launch token (so it carries that
+token's game scope and nothing more). A reconnect fetches a new one. No `Authorization` header is sent
+beside it. Only a deployment that answers the ticket endpoint `404` - one that predates tickets - gets
+the token itself, in the header and as `?access_token=`; any other refusal fails the connect.
+
 ## Storage
 
 The SDK ships no store that claims to be secure, because none of the options available to a package

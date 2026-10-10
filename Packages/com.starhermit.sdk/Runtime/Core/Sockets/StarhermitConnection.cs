@@ -17,10 +17,16 @@ namespace Starhermit
     /// about what a dropped connection means.
     /// </para>
     /// <para>
-    /// Reconnection re-acquires a current access token before each attempt, backs off with jitter, and
-    /// stops for good on an authorization or policy close - those do not get better by trying again.
-    /// It never assumes membership survived the gap: <see cref="OnReconnectedAsync"/> is where a
-    /// protocol refetches or rejoins whatever it was attached to.
+    /// Every handshake - the first and each reconnection - presents a connection ticket fetched
+    /// immediately before it, because a ticket is spent by the handshake that carries it. A
+    /// deployment that predates tickets answers the ticket endpoint <c>404</c>, and only then does the
+    /// handshake carry the token itself.
+    /// </para>
+    /// <para>
+    /// Reconnection backs off with jitter and stops for good on an authorization or policy close -
+    /// those do not get better by trying again. It never assumes membership survived the gap:
+    /// <see cref="OnReconnectedAsync"/> is where a protocol refetches or rejoins whatever it was
+    /// attached to.
     /// </para>
     /// </remarks>
     public abstract class StarhermitConnection : IDisposable, IStarhermitDiagnosticsSource
@@ -235,7 +241,9 @@ namespace Starhermit
         /// <summary>Builds the handshake address, including this protocol's query parameters.</summary>
         /// <param name="accessToken">Token to place in the query string, when headers are unavailable.</param>
         /// <returns>The absolute socket address.</returns>
-        protected Uri BuildUri(string? accessToken)
+        protected Uri BuildUri(string? accessToken) => BuildUri("access_token", accessToken);
+
+        private Uri BuildUri(string credentialParameter, string? credential)
         {
             var query = new List<KeyValuePair<string, string>>(4);
             BuildQuery(query);
@@ -249,10 +257,10 @@ namespace Starhermit
                 builder.Append(Uri.EscapeDataString(parameter.Key)).Append('=').Append(Uri.EscapeDataString(parameter.Value));
             }
 
-            if (accessToken != null)
+            if (credential != null)
             {
                 builder.Append(first ? '?' : '&');
-                builder.Append("access_token=").Append(Uri.EscapeDataString(accessToken));
+                builder.Append(credentialParameter).Append('=').Append(Uri.EscapeDataString(credential));
             }
 
             return new Uri(Options.ResolveWebSocketBaseUri(), builder.ToString());
@@ -281,15 +289,39 @@ namespace Starhermit
         {
             SetState(StarhermitConnectionState.Connecting);
 
-            var token = await ResolveTokenAsync(cancellationToken).ConfigureAwait(false);
+            HandshakeCredential credential;
+            try
+            {
+                credential = await ResolveHandshakeCredentialAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Faulted rather than left Connecting: ConnectAsync returns early while a connection
+                // reads as Connecting, so a failed ticket fetch would otherwise make every later
+                // connect a silent no-op.
+                SetState(StarhermitConnectionState.Faulted);
+                throw;
+            }
+
             var socket = _client.SocketFactory.Create();
             var headers = new List<KeyValuePair<string, string>>(2);
-            if (token != null) headers.Add(new KeyValuePair<string, string>("Authorization", "Bearer " + token));
-
-            // The token also goes in the query string: browsers cannot set a handshake header, and the
-            // deployment accepts ?access_token= on /ws for exactly that reason. It is redacted from
-            // every log and never copied into telemetry.
-            var uri = BuildUri(token);
+            Uri uri;
+            if (credential.Ticket != null)
+            {
+                // The ticket is the handshake's only credential. Sending the bearer token beside it
+                // would put back on the wire the thing the ticket exists to keep off it, and the
+                // deployment reads the query credential first anyway.
+                uri = BuildUri("ticket", credential.Ticket);
+            }
+            else
+            {
+                // A deployment without tickets: the token rides the header where the platform allows
+                // one, and the query string because a browser cannot set a handshake header. It is
+                // redacted from every log and never copied into telemetry.
+                if (credential.Token != null)
+                    headers.Add(new KeyValuePair<string, string>("Authorization", "Bearer " + credential.Token));
+                uri = BuildUri(credential.Token);
+            }
 
             using var timeout = new CancellationTokenSource(Options.ConnectTimeout);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
@@ -323,12 +355,12 @@ namespace Starhermit
             _log.Log(StarhermitLogLevel.Info, $"The {Name} socket is connected.");
         }
 
-        private async Task<string?> ResolveTokenAsync(CancellationToken cancellationToken)
+        private async Task<HandshakeCredential> ResolveHandshakeCredentialAsync(CancellationToken cancellationToken)
         {
             switch (Credential)
             {
                 case StarhermitCredential.None:
-                    return null;
+                    return default;
                 case StarhermitCredential.Launch:
                 {
                     var slug = GameSlug ?? Options.GameSlug;
@@ -341,7 +373,11 @@ namespace Starhermit
                             $"The {Name} socket needs a launch token for '{slug ?? "<no slug>"}'. Mint one with Games.ForSlug(slug).AcquireLaunchTokenAsync() first.");
                     }
 
-                    return launch.Value.Token;
+                    // Bought with the launch token itself, so the ticket carries its game_scope: the
+                    // socket can reach exactly what the token could, and no further.
+                    var game = _client.Games.ForSlug(slug!).WithLaunchToken();
+                    return await ExchangeForTicketAsync(launch.Value.Token, game.IssueConnectionTicketAsync, cancellationToken)
+                        .ConfigureAwait(false);
                 }
 
                 case StarhermitCredential.Server:
@@ -355,7 +391,10 @@ namespace Starhermit
                             $"The {Name} socket needs a dedicated-server token. Exchange an invoke key first.");
                     }
 
-                    return server.Value.Token;
+                    // No ticket: a server token is fenced to its own game's /server/ routes, so the
+                    // ticket endpoint refuses it by design. A dedicated server also has no browser
+                    // standing between it and the Authorization header.
+                    return HandshakeCredential.ForToken(server.Value.Token);
                 }
 
                 default:
@@ -372,8 +411,33 @@ namespace Starhermit
                         });
                     }
 
-                    return token;
+                    return await ExchangeForTicketAsync(token, _client.Auth.IssueConnectionTicketAsync, cancellationToken)
+                        .ConfigureAwait(false);
                 }
+            }
+        }
+
+        private async Task<HandshakeCredential> ExchangeForTicketAsync(
+            string token,
+            Func<CancellationToken, Task<StarhermitConnectionTicket>> issue,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Fetched for this handshake and no other: a ticket is spent by the handshake that
+                // presents it, so a reconnect that reused one would be refused.
+                var ticket = await issue(cancellationToken).ConfigureAwait(false);
+                return HandshakeCredential.ForTicket(ticket.Ticket);
+            }
+            catch (StarhermitNotFoundException)
+            {
+                // Only a deployment that predates tickets earns the fallback. Any other refusal -
+                // an expired session, a rate limit, an outage - is the same answer the handshake
+                // would get, and is reported as one.
+                _log.Log(
+                    StarhermitLogLevel.Info,
+                    $"The deployment issues no connection tickets; the {Name} socket presents its token instead.");
+                return HandshakeCredential.ForToken(token);
             }
         }
 
@@ -679,6 +743,27 @@ namespace Starhermit
             _outboundSignal.Dispose();
             _connectGate.Dispose();
             SetState(StarhermitConnectionState.Disconnected);
+        }
+
+        /// <summary>What one handshake presents: a ticket, or - for a deployment without them - a token.</summary>
+        private readonly struct HandshakeCredential
+        {
+            private HandshakeCredential(string? ticket, string? token)
+            {
+                Ticket = ticket;
+                Token = token;
+            }
+
+            internal string? Ticket { get; }
+
+            internal string? Token { get; }
+
+            internal static HandshakeCredential ForTicket(string ticket) => new HandshakeCredential(ticket, null);
+
+            internal static HandshakeCredential ForToken(string token) => new HandshakeCredential(null, token);
+
+            /// <inheritdoc />
+            public override string ToString() => Ticket != null ? "ticket(***)" : Token != null ? "token(***)" : "anonymous";
         }
 
         private sealed class PendingSend

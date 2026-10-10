@@ -102,6 +102,12 @@ namespace Starhermit
         /// <summary>Reports upload and download progress for large transfers.</summary>
         public IProgress<StarhermitTransferProgress>? Progress { get; set; }
 
+        /// <summary>
+        /// Whether a <c>304 Not Modified</c> is an answer rather than a failure. Set only on a request
+        /// that sends a validator (<c>If-None-Match</c>); the response then has no body.
+        /// </summary>
+        public bool AcceptsNotModified { get; set; }
+
         /// <summary>Adds a query parameter. Null values are skipped, which keeps call sites terse.</summary>
         /// <param name="name">Parameter name.</param>
         /// <param name="value">Parameter value; null omits the parameter.</param>
@@ -186,6 +192,19 @@ namespace Starhermit
         {
             Expect = kind;
             return this;
+        }
+
+        /// <summary>
+        /// Sends <c>If-None-Match</c> and treats <c>304 Not Modified</c> as an answer. A null or empty
+        /// version sends no validator, so the request is unconditional.
+        /// </summary>
+        /// <param name="eTag">The version the caller already holds, exactly as the API returned it.</param>
+        /// <returns>This request, for chaining.</returns>
+        public StarhermitRequest IfNoneMatch(string? eTag)
+        {
+            if (string.IsNullOrEmpty(eTag)) return this;
+            AcceptsNotModified = true;
+            return WithHeader("If-None-Match", eTag);
         }
 
         /// <summary>

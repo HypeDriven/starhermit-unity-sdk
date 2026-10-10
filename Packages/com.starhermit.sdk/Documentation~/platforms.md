@@ -25,9 +25,10 @@ is part of the package and Unity links it automatically.
 
 Two consequences to design around:
 
-- A browser cannot set handshake headers, so the SDK also passes the access token as
-  `?access_token=`. It is redacted from every log the SDK writes; make sure your own logging does the
-  same, and prefer a deployment served over `wss`.
+- A browser cannot set handshake headers, so the credential goes in the socket's URL. The SDK puts a
+  single-use connection ticket there, fetched for each handshake, rather than the access token; only a
+  deployment that predates tickets gets `?access_token=`. Both are redacted from every log the SDK
+  writes; make sure your own logging does the same, and prefer a deployment served over `wss`.
 - There is no filesystem. Supply an `IStarhermitFileStore` backed by browser storage, or use the
   byte-array overloads and keep archives small.
 

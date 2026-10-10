@@ -22,7 +22,7 @@ Starhermit platform. It ships:
   builds.
 - High-level helpers (presence heartbeat, cloud-save synchroniser, message deduplicator) and a `Raw`
   client for endpoints a future deployment adds before the SDK types them.
-- 178 tests (173 hermetic, 5 against a live deployment), eight samples, XML documentation on every
+- 194 tests (184 hermetic, 10 against a live deployment), eight samples, XML documentation on every
   public member, and a generated coverage manifest that fails the build when an API operation has no
   SDK mapping.
 
@@ -218,12 +218,23 @@ All six connections share `StarhermitConnection`: connect, graceful close, cance
 caps, bounded outbound queues with explicit backpressure, ordered sends, and the states
 `Disconnected`, `Connecting`, `Connected`, `Reconnecting`, `Closing`, `Faulted`.
 
-Credentials ride the `Authorization` header where the platform allows it and `?access_token=`
-otherwise, because a browser cannot set handshake headers; the query token is redacted from every log.
-The deployment also issues single-use connection tickets for exactly that case
-(`Auth.IssueConnectionTicketAsync`, or a game client's for its launch token); the connections do not
-yet use them.
-Reconnection uses jittered backoff, re-acquires a current token before each attempt, and stops for good
+A browser cannot set handshake headers, so a socket's credential travels in its URL - the least
+private part of a request. Every handshake therefore presents a **connection ticket** (`?ticket=`)
+fetched immediately before it: single-use, valid for seconds, and only on `/ws`. The first connect and
+every reconnect fetch their own, because the deployment spends a ticket on the handshake that presents
+it. An account socket buys its ticket with the session (`Auth.IssueConnectionTicketAsync`); a socket
+authorised by a launch token buys it with that token (`StarhermitGameClient.IssueConnectionTicketAsync`),
+so the ticket carries the token's `game_scope` and reaches exactly what the token could. A ticketed
+handshake sends no `Authorization` header: the ticket is its only credential.
+
+Only a ticket endpoint answering `404` - a deployment that predates tickets - makes the handshake carry
+the token instead, in the `Authorization` header and as `?access_token=`. Any other refusal of the
+ticket (an expired session, a rate limit, an outage) fails the connect as the handshake itself would
+have. A dedicated-server token never asks for a ticket: the deployment fences it to its game's
+`/server/` routes, and a server has no browser between it and the header. Tickets and query tokens are
+redacted from every log. A connect whose ticket fetch fails leaves the connection `Faulted`, so the
+next `ConnectAsync` tries again.
+Reconnection uses jittered backoff and stops for good
 on authorization or policy closes. It never assumes membership survived: each protocol refetches or
 rejoins in `OnReconnectedAsync`, and a failure there is logged rather than treated as a broken socket.
 
@@ -248,6 +259,10 @@ private key.
 `StarhermitChallenge.CanonicalPayload` reproduces the exact bytes the server verifies. The deployment
 verifies against its own .NET serialisation of the challenge (PascalCase member names in declaration
 order) while the response arrives camel-cased, so re-serialising what was received would never verify.
+The string members are escaped the way System.Text.Json's default encoder escapes them (`+`, `<`, `>`,
+`&`, `'`, `` ` ``, `"` and anything outside printable ASCII as upper-case `\uXXXX`), while the two
+timestamps are copied verbatim: the nonce is base64, so about three challenges in ten carry a `+`, and
+signing it literally fails exactly those sign-ins.
 This coupling is recorded in `contracts/backend-notes.md` as something the API should fix by returning
 the bytes to sign.
 
@@ -296,7 +311,11 @@ token never appears in `ToString()`, a log, or telemetry.
   `DownloadVersionAsync` returns from the same response as the bytes. An upload is unconditional
   unless it passes a `StarhermitSaveCondition` - `IfMatch(etag)`, `IfNoSaveExists`
   (`If-None-Match: *`), `IfAnySaveExists`, or `ForVersion(info)` - and a write that loses to another
-  device throws `StarhermitPreconditionFailedException` instead of overwriting it. The account's
+  device throws `StarhermitPreconditionFailedException` instead of overwriting it.
+  `DownloadIfChangedAsync(key, heldETag)` downloads only a version the caller does not already hold:
+  it sends `If-None-Match`, and a `304` comes back as `NotModified` with no archive, in one request and
+  without a metadata read first. The pipeline accepts a `304` only from a request that sent a validator;
+  anywhere else it is an error, never an empty body. The account's
   size, slot and total limits surface as `StarhermitQuotaExceededException` (`413`/`507`) or
   `StarhermitConflictException` (`409`, slots), each naming the limit in force.
 - `StarhermitCloudSaveSynchronizer` compares server metadata with a caller-owned sync marker and, when
@@ -306,7 +325,10 @@ token never appears in `ToString()`, a log, or telemetry.
   `Conflict` with the server's current metadata - under `LocalWins` too, since that decision was about
   a version that no longer exists. A download is reported only with the metadata of the bytes it
   returns: when a write lands between the download and the metadata read, it reads again (three
-  attempts) rather than hand back a marker for a save the device never saw.
+  attempts) rather than hand back a marker for a save the device never saw. It does not download
+  conditionally: its first request, the metadata read, already carries the server's version, and it
+  downloads only when that version is not the one it compared against - by which point a `304` is
+  impossible.
 - `client.Achievements` and `client.Leaderboards`: unlocks, client-claimable unlock, definitions,
   paged entries with server-assigned ranks, and score submission where the definition permits it.
 
@@ -350,14 +372,20 @@ The token lives in the scoped credential store, never with the account session.
 
 ## 11. Realtime rooms and peer relay
 
-`client.RealtimeRooms`: create rooms with teams, seats, AI seats and backfill; read the caller's active
+`client.RealtimeRooms`: create rooms with teams, seats, AI seats and backfill - and, through
+`CreateRoomAsync(slug, StarhermitRoomSettings)`, a name, browser visibility, a cap on AI backfill and
+join-in-progress; read the caller's active
 room and every room they hold a seat in; browse listed rooms (`StarhermitRoomSummary`, which carries
 no join code or roster), optionally including running matches with a vacant seat; join by code; list,
-accept and decline invites; quick-join; read a room; invite; open for backfill; start; leave; assign
+accept and decline invites; quick-join, optionally filtered (`StarhermitQuickJoinFilter`: team count,
+seats per team, a metadata subset, and running matches that take players mid-match) with a miss
+surfacing as `StarhermitNotFoundException`; read a room; invite; open for backfill; start; leave; assign
 seats; submit results; and, as host, rename, list or unlist, change metadata and backfill
 (`UpdateRoomAsync`, a compare-and-swap on the room's `Revision`) and put the roster into matchmaking as
 a party. A room's `JoinCode` is a capability - holding it takes a seat - and is redacted from logs by
-name.
+name; the deployment chooses it, and making a room quick-joinable is `OpenRoomAsync`, so neither is a
+creation setting. The original `CreateRoomAsync` and `QuickJoinAsync` signatures are unchanged and send
+exactly what they always did.
 
 `StarhermitRealtimeConnection` attaches to `/ws/v1/realtime`, sends `chat`, `ready` and (host only)
 `event` control frames, and receives binary payloads prefixed with the sender's 16-byte participant id
@@ -454,17 +482,24 @@ codecs. There is no reflection anywhere in the runtime.
 
 ### 17.1 What runs today
 
-- **173 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
+- **184 hermetic NUnit tests** covering the JSON layer, the request pipeline (routes, verbs, query, bodies,
   headers, credentials, response mapping, cancellation, typed errors and limit refusals, paging), retry
   eligibility and jitter bounds, refresh coordination and rotation persistence, redaction, socket
-  machinery (ordering, backpressure, reconnection, policy closes, handler exceptions), all six wire
+  machinery (ordering, backpressure, reconnection, policy closes, handler exceptions, a ticket per
+  handshake and the fallback for a deployment without tickets), all six wire
   protocols, cloud-save conflict resolution and conditional writes, the player, owner and room
   operations' wire shapes, client lifecycle and model tolerance, and the coverage manifest.
   They run under `dotnet test` and, unchanged, as Unity EditMode tests.
-- **Five live contract tests** that read a real deployment when `STARHERMIT_TEST_BASE_URL` is set, and
-  are skipped otherwise. They confirm the SDK's parsing, model mapping, paging metadata, clock
-  synchronisation and error typing against the API as deployed, over the anonymous surface. They have
-  been run against the development deployment and pass.
+- **Ten live contract tests** that read a real deployment when `STARHERMIT_TEST_BASE_URL` is set, and
+  are skipped otherwise. Five read the anonymous surface (parsing, model mapping, paging metadata,
+  clock synchronisation, error typing). Five more run signed in when `STARHERMIT_TEST_MAILBOX` also
+  names the directory the deployment's mail lands in: they create an account the way a player does -
+  register a key, redeem the emailed link, accept the terms - never by minting a token, then check
+  public-key sign-in, a fresh single-use ticket per handshake (a replayed one is refused), a launch
+  token's ticket reaching its own game's room and not another game's, room settings and filtered
+  quick-join across two accounts, and conditional cloud-save downloads. `tools/live-test.sh` stands up
+  a throwaway backend from the checkout (Postgres, Redis, the Api and `tools/smtp_sink.py`), runs them,
+  and removes it; all ten pass against it.
 - **Three Unity compile-checks** (`build/unity/*.csproj`) type-check the Unity-only code - the
   `UnityWebRequest` transport, the WebGL bridge, settings, audio adapters, editor tooling and all
   eight samples - against small API stubs, on machines with no Unity licence.
@@ -487,14 +522,6 @@ qualified support, and no platform should be advertised as verified.
 
 - The optional WebRTC voice adapter. The PCM fallback path is implemented; a WebRTC adapter would slot
   in behind the same interfaces.
-- Socket handshakes still carry `?access_token=` when a header is unavailable; switching them to
-  connection tickets, with a fallback for a deployment that predates tickets, is not done.
-- Creating a room and quick-joining do not yet take a name, visibility, backfill cap,
-  join-in-progress or quick-join filters; `UpdateRoomAsync` sets the first four after creation.
-- The authenticated half of the live contract suite. Exercising it needs a real session, and the
-  tests deliberately will not mint one from a signing secret - a test that forges credentials stops
-  testing the thing it claims to test. Wiring it to a seeded test account on an ephemeral backend is
-  the remaining work.
 
 ## 18. Samples and documentation
 
